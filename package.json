@@ -1,0 +1,82 @@
+{
+  "name": "@superdoc-dev/template-builder",
+  "version": "0.0.0-development",
+  "description": "Template builder component for SuperDoc",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build:js": "tsc && vite build",
+    "build:css": "vite build --config vite.css.config.js",
+    "build": "pnpm build:js && pnpm build:css",
+    "dev": "pnpm build:js -- --watch",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepare": "husky",
+    "release": "semantic-release",
+    "check:all": "pnpm run type-check && pnpm run lint && pnpm run format"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/superdoc-dev/template-builder.git"
+  },
+  "keywords": [
+    "superdoc",
+    "template",
+    "template-builder",
+    "document",
+    "fields",
+    "sdt",
+    "docx"
+  ],
+  "author": "SuperDoc Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/superdoc-dev/template-builder/issues"
+  },
+  "homepage": "https://github.com/superdoc-dev/template-builder#readme",
+  "peerDependencies": {
+    "superdoc": "0.21.1-local.1"
+  },
+  "peerDependenciesMeta": {
+    "superdoc": {
+      "optional": false
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/node": "^24.5.2",
+    "eslint": "^9.36.0",
+    "husky": "^9.1.7",
+    "postcss": "^8.5.6",
+    "postcss-import": "^16.1.1",
+    "prettier": "^3.6.2",
+    "rollup-plugin-css-only": "^4.5.5",
+    "rollup-plugin-postcss": "^4.0.2",
+    "semantic-release": "^24.2.9",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.1",
+    "vite": "^7.1.7",
+    "vite-plugin-dts": "^4.5.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

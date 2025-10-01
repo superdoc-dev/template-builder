@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Editor
+.vscode/
+.DS_Store
+
+# Environment
+.env
+
+# Coverage
+coverage/
+
+# Examples
+examples/**/package-lock.json
+examples/**/pnpm-lock.yaml
+examples/**/yarn.lock
