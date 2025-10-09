@@ -3,15 +3,27 @@
         "target": "ES2020",
         "module": "ESNext",
         "lib": [
-            "ES2020",
-            "DOM"
+            "ES2022",
+            "DOM",
+            "DOM.Iterable"
         ],
+        "types": ["vitest/globals"],
+        "jsx": "react-jsx",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
-        "moduleResolution": "bundler"
+        "moduleResolution": "bundler",
+        "declaration": true,
+        "declarationMap": true,
+        "sourceMap": true,
+        "outDir": "dist",
+        "rootDir": "src"
     },
     "include": [
         "src"
+    ],
+    "exclude": [
+        "node_modules",
+        "dist"
     ]
 }

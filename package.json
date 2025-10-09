@@ -1,7 +1,7 @@
 {
   "name": "@superdoc-dev/template-builder",
   "version": "0.0.0-development",
-  "description": "Template builder component for SuperDoc",
+  "description": "React template builder component for SuperDoc",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -11,21 +11,20 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
-    },
-    "./style.css": "./dist/style.css"
+    }
   },
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "build:js": "tsc && vite build",
-    "build:css": "vite build --config vite.css.config.js",
-    "build": "pnpm build:js && pnpm build:css",
-    "dev": "pnpm build:js -- --watch",
+    "dev": "vite build --watch",
+    "build": "tsc && vite build",
     "type-check": "tsc --noEmit",
-    "lint": "eslint src --ext .ts",
-    "format": "prettier --write \"src/**/*.ts\"",
+    "lint": "eslint src --ext .ts,.tsx",
+    "format": "prettier --write \"src/**/*.{ts,tsx}\"",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
     "prepare": "husky",
     "release": "semantic-release",
     "check:all": "pnpm run type-check && pnpm run lint && pnpm run format"
@@ -41,7 +40,8 @@
     "document",
     "fields",
     "sdt",
-    "docx"
+    "docx",
+    "react"
   ],
   "author": "SuperDoc Team",
   "license": "MIT",
@@ -50,28 +50,39 @@
   },
   "homepage": "https://github.com/superdoc-dev/template-builder#readme",
   "peerDependencies": {
-    "superdoc": "0.21.1-local.1"
+    "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
+    "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0"
   },
-  "peerDependenciesMeta": {
-    "superdoc": {
-      "optional": false
-    }
+  "dependencies": {
+    "superdoc": "^0.22.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.36.0",
-    "@types/node": "^24.5.2",
-    "eslint": "^9.36.0",
+    "@commitlint/cli": "^20.1.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@eslint/js": "^9.37.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.7.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.1",
+    "@vitejs/plugin-react": "^5.0.4",
+    "eslint": "^9.37.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.0",
     "husky": "^9.1.7",
-    "postcss": "^8.5.6",
-    "postcss-import": "^16.1.1",
+    "jsdom": "^27.0.0",
     "prettier": "^3.6.2",
-    "rollup-plugin-css-only": "^4.5.5",
-    "rollup-plugin-postcss": "^4.0.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "semantic-release": "^24.2.9",
-    "typescript": "^5.9.2",
-    "typescript-eslint": "^8.44.1",
-    "vite": "^7.1.7",
-    "vite-plugin-dts": "^4.5.4"
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.0",
+    "vite": "^7.1.9",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "^3.2.4"
   },
   "publishConfig": {
     "access": "public"

@@ -1,29 +1,6 @@
 # @superdoc-dev/template-builder
 
-A lightweight template building component for SuperDoc that enables document field management using structured content (SDT).
-
-## What is this?
-
-SuperDoc Template Builder wraps the SuperDoc editor to provide field insertion and management capabilities for creating document templates. It uses Word's Structured Document Tags (SDT) under the hood, ensuring compatibility with DOCX format while maintaining flexibility.
-
-## Why?
-
-Building document templates requires:
-- Easy field insertion at cursor position
-- Field discovery and management
-- Trigger-based UI (like typing `{{`)
-- Clean separation between field logic and UI
-
-This component provides the field management layer while letting you bring your own UI components for menus, panels, and field lists.
-
-## Key Features
-
-- **Trigger Detection**: Monitor for custom triggers (default: `{{`)
-- **Field Operations**: Insert, update, delete, and navigate fields
-- **Field Discovery**: Automatically find existing fields in documents
-- **UI Agnostic**: Bring your own menus, panels, and components
-- **SDT Based**: Uses structured content tags for Word compatibility
-- **Simple API**: Clear callbacks for trigger events and field changes
+React template building component for SuperDoc that enables document field management using structured content (SDT).
 
 ## Installation
 
@@ -33,141 +10,224 @@ npm install @superdoc-dev/template-builder
 
 ## Quick Start
 
-```javascript
+```jsx
 import SuperDocTemplateBuilder from '@superdoc-dev/template-builder';
+import 'superdoc/dist/style.css';
 
-const builder = new SuperDocTemplateBuilder({
-  superdoc: mySuperdocInstance,
-  
-  onTrigger: (event) => {
-    // Show your field menu
-    showFieldMenu({
-      position: event.bounds,
-      onSelect: (fieldName) => {
-        event.cleanup(); // Remove trigger text
-        builder.insertField({ 
-          alias: fieldName,
-          tag: 'customer_data' 
-        });
-      }
-    });
-  },
-  
-  onFieldInserted: (field) => {
-    console.log('Field added:', field);
-    updateFieldList();
-  }
-});
+function TemplateEditor() {
+  return (
+    <SuperDocTemplateBuilder
+      document={{
+        source: "template.docx",
+        mode: "editing"
+      }}
+      
+      fields={{
+        available: [
+          { id: 'customer_name', label: 'Customer Name', category: 'Contact' },
+          { id: 'invoice_date', label: 'Invoice Date', category: 'Invoice' },
+          { id: 'amount', label: 'Amount', category: 'Invoice' }
+        ]
+      }}
+      
+      onTrigger={(event) => {
+        console.log('User typed trigger at', event.position);
+      }}
+      
+      onFieldInsert={(field) => {
+        console.log('Field inserted:', field.alias);
+      }}
+    />
+  );
+}
 ```
 
-## Common Use Cases
+## What You Receive
 
-### Contract Templates
-Create reusable contracts with fields for parties, dates, amounts, and terms that can be filled programmatically.
+```javascript
+{
+  fields: [
+    { id: "field_123", alias: "Customer Name", tag: "contact" },
+    { id: "field_124", alias: "Invoice Date", tag: "invoice" }
+  ],
+  document: { /* ProseMirror document JSON */ }
+}
+```
 
-### Report Templates
-Build standardized reports with placeholders for data, charts, and dynamic content.
+## Features
 
-### Mail Merge Documents
-Design templates for bulk document generation with personalized fields.
-
-### Form Letters
-Create letters with variable fields for names, addresses, and custom content.
-
-## How It Works
-
-1. **Monitor Input**: Detect trigger patterns (like `{{`) as users type
-2. **Fire Events**: Notify when triggers are detected with position info
-3. **Manage Fields**: Insert structured content nodes as fields
-4. **Track State**: Maintain a registry of all fields in the document
+- **🎯 Trigger Detection** - Type `{{` (customizable) to insert fields
+- **📝 Field Management** - Insert, update, delete, and navigate fields
+- **🔍 Field Discovery** - Automatically finds existing fields in documents  
+- **🎨 UI Agnostic** - Bring your own menus, panels, and components
+- **📄 SDT Based** - Uses structured content tags for Word compatibility
+- **⚡ Simple API** - Clear callbacks for trigger events and field changes
 
 ## API
 
-### Configuration
+### Component Props
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `superdoc` | SuperDocInstance | SuperDoc instance to attach to |
-| `trigger` | string | Trigger pattern to detect (default: `{{`) |
-| `onTrigger` | function | Called when trigger is detected |
-| `onFieldInserted` | function | Called after field insertion |
-| `onFieldSelected` | function | Called when field selection changes |
-| `onFieldsChanged` | function | Called when fields are added/removed |
-
-### Methods
-
-- `insertField(options)` - Insert inline field at cursor
-- `insertBlockField(options)` - Insert block-level field
-- `updateField(id, updates)` - Update field properties
-- `deleteField(id)` - Remove field from document
-- `selectField(id)` - Navigate to specific field
-- `getFields()` - Get all fields in document
-- `nextField()` - Jump to next field
-- `previousField()` - Jump to previous field
-
-### Field Structure
-
-Fields use three SDT attributes:
-- `id` - Unique identifier
-- `alias` - Display name/label
-- `tag` - Optional metadata (can store JSON)
-
-## Examples
-
-### Basic Field Insertion
-
-```javascript
-// Insert simple text field
-builder.insertField({
-  alias: 'Customer Name',
-  tag: 'customer'
-});
-
-// Insert with metadata
-builder.insertField({
-  alias: 'Invoice Date',
-  tag: JSON.stringify({
-    type: 'date',
-    format: 'MM/DD/YYYY',
-    required: true
-  })
-});
-```
-
-### Custom Triggers
-
-```javascript
-const builder = new SuperDocTemplateBuilder({
-  superdoc: instance,
-  trigger: '/', // Slash commands
+```typescript
+<SuperDocTemplateBuilder
+  // Document configuration
+  document={{
+    source: File | Blob | string,
+    mode: 'editing' | 'viewing'
+  }}
   
-  onTrigger: (event) => {
-    showSlashMenu(event.bounds);
-  }
-});
+  // Field configuration
+  fields={{
+    available: FieldDefinition[],  // Fields user can insert
+    initial: TemplateField[]       // Pre-existing fields
+  }}
+  
+  // UI components (optional)
+  menu={{
+    trigger: '{{',                  // Trigger pattern
+    component: CustomFieldMenu      // Custom menu component
+  }}
+  
+  list={{
+    position: 'left' | 'right',    // Sidebar position
+    component: CustomFieldList      // Custom list component
+  }}
+  
+  // Event handlers
+  onReady={() => {}}
+  onTrigger={(event) => {}}
+  onFieldInsert={(field) => {}}
+  onFieldUpdate={(field) => {}}
+  onFieldDelete={(fieldId) => {}}
+  onFieldsChange={(fields) => {}}
+  onFieldSelect={(field) => {}}
+/>
 ```
 
-### Field Navigation
+### Ref Methods
 
-```javascript
-// Navigate between fields
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'Tab') {
-    e.preventDefault();
-    if (e.shiftKey) {
-      builder.previousField();
-    } else {
-      builder.nextField();
+```jsx
+const ref = useRef();
+
+// Insert fields
+ref.current.insertField({ alias: 'Customer Name' });
+ref.current.insertBlockField({ alias: 'Terms Block' });
+
+// Update/delete fields
+ref.current.updateField(fieldId, { alias: 'New Name' });
+ref.current.deleteField(fieldId);
+
+// Navigation
+ref.current.selectField(fieldId);
+ref.current.nextField();      // Tab behavior
+ref.current.previousField();  // Shift+Tab behavior
+
+// Get data
+const fields = ref.current.getFields();
+const template = ref.current.exportTemplate();
+```
+
+## Custom Components
+
+### Field Menu
+
+```jsx
+const CustomFieldMenu = ({ isVisible, position, availableFields, onSelect, onClose }) => {
+  if (!isVisible) return null;
+  
+  return (
+    <div style={{ position: 'fixed', left: position?.left, top: position?.top }}>
+      {availableFields.map(field => (
+        <button key={field.id} onClick={() => onSelect(field)}>
+          {field.label}
+        </button>
+      ))}
+      <button onClick={onClose}>Cancel</button>
+    </div>
+  );
+};
+```
+
+### Field List
+
+```jsx
+const CustomFieldList = ({ fields, onSelect, onDelete, selectedFieldId }) => {
+  return (
+    <div>
+      <h3>Fields ({fields.length})</h3>
+      {fields.map(field => (
+        <div 
+          key={field.id}
+          onClick={() => onSelect(field)}
+          style={{ background: selectedFieldId === field.id ? '#blue' : '#gray' }}
+        >
+          {field.alias}
+          <button onClick={() => onDelete(field.id)}>Delete</button>
+        </div>
+      ))}
+    </div>
+  );
+};
+```
+
+## Field Navigation
+
+Enable Tab/Shift+Tab navigation:
+
+```jsx
+function TemplateEditor() {
+  const ref = useRef();
+  
+  const handleKeyDown = (e) => {
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      if (e.shiftKey) {
+        ref.current?.previousField();
+      } else {
+        ref.current?.nextField();
+      }
     }
-  }
-});
+  };
+  
+  return (
+    <div onKeyDown={handleKeyDown}>
+      <SuperDocTemplateBuilder ref={ref} {...props} />
+    </div>
+  );
+}
 ```
 
-## Philosophy
+## Export Template
 
-This component follows the principle: **we handle the field logic, you handle the UI**.
+Get the complete template data for saving:
 
-We detect triggers, manage fields, and notify you of changes. You decide how to style menus, design panels, and present field options. This separation ensures the component works with any UI framework or design system.
+```jsx
+const handleSave = () => {
+  const data = ref.current?.exportTemplate();
+  
+  // Save to backend
+  await api.saveTemplate({
+    name: 'Invoice Template',
+    fields: data.fields,
+    document: data.document
+  });
+};
+```
+
+## TypeScript
+
+Full TypeScript support included:
+
+```typescript
+import SuperDocTemplateBuilder from '@superdoc-dev/template-builder';
+import type { 
+  TemplateField,
+  FieldDefinition,
+  TriggerEvent,
+  SuperDocTemplateBuilderHandle 
+} from '@superdoc-dev/template-builder';
+
+const ref = useRef<SuperDocTemplateBuilderHandle>(null);
+```
 
 ## License
 

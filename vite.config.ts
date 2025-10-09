@@ -1,22 +1,27 @@
-// vite.config.ts
 import { defineConfig } from 'vite';
 import dts from 'vite-plugin-dts';
+import react from '@vitejs/plugin-react';
 
 export default defineConfig({
     build: {
         lib: {
-            entry: 'src/index.ts',
+            entry: 'src/index.tsx',
             formats: ['es', 'cjs'],
             fileName: (format) => (format === 'es' ? 'index.mjs' : 'index.js'),
-            // This tells Vite to name the CSS file
-            cssFileName: 'style'
         },
         rollupOptions: {
-            external: ['superdoc'],
-            output: {
-                assetFileNames: '[name].[ext]'
-            }
-        }
+            external: ['react', 'react-dom', 'superdoc'],
+        },
     },
-    plugins: [dts()]
+    plugins: [
+        react(),
+        dts()
+    ],
+    test: {
+        environment: 'jsdom',
+        setupFiles: ['./src/test/setup.ts'],
+        globals: true,
+        clearMocks: true,
+        restoreMocks: true
+    }
 });
