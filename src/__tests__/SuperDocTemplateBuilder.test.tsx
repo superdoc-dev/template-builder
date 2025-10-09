@@ -1,5 +1,5 @@
 import React, { createRef } from "react";
-import { render, screen, waitFor, act } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -85,7 +85,9 @@ describe("SuperDocTemplateBuilder component", () => {
     });
 
     // Check that field menu is visible
-    expect(screen.getByText("Insert Field")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /contact \(1\)/i }),
+    ).toBeVisible();
   });
 
   it("inserts fields using ref methods", async () => {
@@ -280,11 +282,15 @@ describe("SuperDocTemplateBuilder component", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Insert Field")).toBeInTheDocument();
+      expect(
+        screen.getByRole("button", { name: /contact \(1\)/i }),
+      ).toBeVisible();
     });
 
     // Select a field from menu
-    const customerNameButton = screen.getByText("Customer Name");
+    const contactGroup = screen.getByRole("button", { name: /contact \(1\)/i });
+    const contactPanel = contactGroup.nextElementSibling as HTMLElement;
+    const customerNameButton = within(contactPanel).getByText("Customer Name");
     await userEvent.click(customerNameButton);
 
     await waitFor(() => {

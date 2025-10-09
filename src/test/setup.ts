@@ -8,6 +8,7 @@ const mockDeleteStructuredContentById = vi.fn();
 const mockSelectStructuredContentById = vi.fn();
 const mockDestroy = vi.fn();
 const mockExportDocx = vi.fn(async () => new Blob());
+const mockExport = vi.fn(async () => new Blob());
 
 const mockEditor = {
   commands: {
@@ -38,6 +39,7 @@ const mockEditor = {
     dispatch: vi.fn(),
     coordsAtPos: vi.fn(() => ({ left: 0, top: 0 })),
   },
+  export: mockExport,
   exportDocx: mockExportDocx,
   on: vi.fn(),
 };
@@ -50,6 +52,7 @@ const SuperDocMock = vi.fn((options: any = {}) => {
   return {
     destroy: mockDestroy,
     activeEditor: mockEditor,
+    export: mockExport,
     exportDocx: mockExportDocx,
     on: vi.fn((event: string, handler: (data?: any) => void) => {
       if (event === "editorCreate") {
@@ -73,8 +76,17 @@ const SuperDocMock = vi.fn((options: any = {}) => {
 (SuperDocMock as any).mockSelectStructuredContentById =
   mockSelectStructuredContentById;
 (SuperDocMock as any).mockDestroy = mockDestroy;
+(SuperDocMock as any).mockExport = mockExport;
 (SuperDocMock as any).mockExportDocx = mockExportDocx;
 
 vi.mock("superdoc", () => ({
   SuperDoc: SuperDocMock,
 }));
+
+if (!(globalThis.URL as any).createObjectURL) {
+  (globalThis.URL as any).createObjectURL = vi.fn(() => "blob:mock-url");
+}
+
+if (!(globalThis.URL as any).revokeObjectURL) {
+  (globalThis.URL as any).revokeObjectURL = vi.fn();
+}

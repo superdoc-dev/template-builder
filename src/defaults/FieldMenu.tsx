@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FieldDefinition, FieldMenuProps } from "../types";
 
 export const FieldMenu: React.FC<FieldMenuProps> = ({
@@ -34,6 +34,56 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
       minWidth: "200px",
     };
   }, [position]);
+
+  const groupedFields = useMemo(() => {
+    const groups: { category: string; fields: FieldDefinition[] }[] = [];
+    const categoryIndex = new Map<string, number>();
+
+    availableFields.forEach((field) => {
+      const categoryName = field.category?.trim() || "Uncategorized";
+      const existingIndex = categoryIndex.get(categoryName);
+
+      if (existingIndex !== undefined) {
+        groups[existingIndex].fields.push(field);
+        return;
+      }
+
+      categoryIndex.set(categoryName, groups.length);
+      groups.push({ category: categoryName, fields: [field] });
+    });
+
+    return groups;
+  }, [availableFields]);
+
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setExpandedCategories((previous) => {
+      if (groupedFields.length === 0) {
+        return Object.keys(previous).length === 0 ? previous : {};
+      }
+
+      const next: Record<string, boolean> = {};
+      let hasChanges = Object.keys(previous).length !== groupedFields.length;
+
+      groupedFields.forEach(({ category }, index) => {
+        const target = previous[category] ?? index === 0;
+        next[category] = target;
+        if (!hasChanges && previous[category] !== target) {
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? next : previous;
+    });
+  }, [groupedFields]);
+
+  const toggleCategory = useCallback((category: string) => {
+    setExpandedCategories((previous) => ({
+      ...previous,
+      [category]: !previous[category],
+    }));
+  }, []);
 
   if (!isVisible) return null;
 
@@ -148,30 +198,83 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
         />
       )}
 
-      {availableFields.map((field) => (
-        <div
-          key={field.id}
-          className="field-menu-item"
-          onClick={() => onSelect(field)}
-          style={{
-            padding: "8px 16px",
-            cursor: "pointer",
-          }}
-        >
-          <span style={{ fontWeight: 500 }}>{field.label}</span>
-          {field.category && (
-            <span
+      {groupedFields.map(({ category, fields }, index) => {
+        const isExpanded = Boolean(expandedCategories[category]);
+        const itemsMaxHeight = `${Math.max(fields.length * 40, 0)}px`;
+
+        return (
+          <div
+            key={category}
+            style={{
+              borderTop: index === 0 && allowCreate ? undefined : "1px solid #f0f0f0",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => toggleCategory(category)}
               style={{
-                fontSize: "0.85em",
-                color: "#666",
-                marginLeft: "8px",
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "8px 16px",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 500,
+                textAlign: "left",
               }}
             >
-              {field.category}
-            </span>
-          )}
-        </div>
-      ))}
+              <span>
+                {category} ({fields.length})
+              </span>
+              <span
+                aria-hidden
+                style={{
+                  display: "inline-block",
+                  width: "8px",
+                  height: "8px",
+                  borderRight: "2px solid #666",
+                  borderBottom: "2px solid #666",
+                  transform: isExpanded ? "rotate(45deg)" : "rotate(-45deg)",
+                  transition: "transform 0.2s ease",
+                  marginLeft: "12px",
+                }}
+              />
+            </button>
+            <div
+              data-category={category}
+              aria-hidden={!isExpanded}
+              style={{
+                overflow: "hidden",
+                maxHeight: isExpanded ? itemsMaxHeight : "0px",
+                opacity: isExpanded ? 1 : 0,
+                transition: "max-height 0.2s ease, opacity 0.2s ease",
+                pointerEvents: isExpanded ? "auto" : "none",
+              }}
+            >
+              <div style={{ padding: isExpanded ? "4px 0" : 0 }}>
+                {fields.map((field) => (
+                  <div
+                    key={field.id}
+                    className="field-menu-item"
+                    onClick={() => onSelect(field)}
+                    style={{
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span style={{ fontWeight: 500 }}>{field.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })}
 
       <div
         style={{
