@@ -28,18 +28,16 @@ const getTemplateFieldsFromEditor = (
   const tags =
     structuredContentHelpers.getStructuredContentTags(editor.state) || [];
 
-  return tags
-    .map((entry: any) => {
-      const node = entry?.node ?? entry;
-      const attrs = node?.attrs ?? {};
+  return tags.map((entry: any) => {
+    const node = entry?.node ?? entry;
+    const attrs = node?.attrs ?? {};
 
-      return {
-        id: attrs.id,
-        alias: attrs.alias || attrs.label || "",
-        tag: attrs.tag,
-      } as Types.TemplateField;
-    })
-    .filter((field: Types.TemplateField) => Boolean(field.id));
+    return {
+      id: attrs.id,
+      alias: attrs.alias || attrs.label || "",
+      tag: attrs.tag,
+    } as Types.TemplateField;
+  });
 };
 
 const areTemplateFieldsEqual = (
@@ -143,7 +141,9 @@ const SuperDocTemplateBuilder = forwardRef<
   const [templateFields, setTemplateFields] = useState<Types.TemplateField[]>(
     fields.initial || [],
   );
-  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | number | null>(
+    null,
+  );
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState<DOMRect | undefined>();
   const [menuQuery, setMenuQuery] = useState<string>("");
@@ -202,13 +202,12 @@ const SuperDocTemplateBuilder = forwardRef<
       if (!superdocRef.current?.activeEditor) return false;
 
       const editor = superdocRef.current.activeEditor;
-      const fieldId = `field_${Date.now()}`;
+      const previousFields = templateFields;
 
       const success =
         mode === "inline"
           ? editor.commands.insertStructuredContentInline?.({
             attrs: {
-              id: fieldId,
               alias: field.alias,
               tag: field.metadata
                 ? JSON.stringify(field.metadata)
@@ -218,7 +217,6 @@ const SuperDocTemplateBuilder = forwardRef<
           })
           : editor.commands.insertStructuredContentBlock?.({
             attrs: {
-              id: fieldId,
               alias: field.alias,
               tag: field.metadata
                 ? JSON.stringify(field.metadata)
@@ -228,28 +226,28 @@ const SuperDocTemplateBuilder = forwardRef<
           });
 
       if (success) {
-        const newField: Types.TemplateField = {
-          id: fieldId,
-          alias: field.alias,
-          tag: field.category,
-        };
+        const updatedFields = getTemplateFieldsFromEditor(editor);
 
-        setTemplateFields((prev) => {
-          const updated = [...prev, newField];
-          onFieldsChange?.(updated);
-          return updated;
-        });
+        setTemplateFields(updatedFields);
+        onFieldsChange?.(updatedFields);
 
-        onFieldInsert?.(newField);
+        const insertedField = updatedFields.find(
+          (candidate) =>
+            !previousFields.some((existing) => existing.id === candidate.id),
+        );
+
+        if (insertedField) {
+          onFieldInsert?.(insertedField);
+        }
       }
 
       return success;
     },
-    [onFieldInsert, onFieldsChange],
+    [onFieldInsert, onFieldsChange, templateFields],
   );
 
   const updateField = useCallback(
-    (id: string, updates: Partial<Types.TemplateField>): boolean => {
+    (id: string | number, updates: Partial<Types.TemplateField>): boolean => {
       if (!superdocRef.current?.activeEditor) return false;
 
       const editor = superdocRef.current.activeEditor;
@@ -275,7 +273,7 @@ const SuperDocTemplateBuilder = forwardRef<
   );
 
   const deleteField = useCallback(
-    (id: string): boolean => {
+    (id: string | number): boolean => {
       const editor = superdocRef.current?.activeEditor;
 
       if (!editor) {
@@ -348,7 +346,7 @@ const SuperDocTemplateBuilder = forwardRef<
   );
 
   const selectField = useCallback(
-    (id: string) => {
+    (id: string | number) => {
       if (!superdocRef.current?.activeEditor) return;
 
       const editor = superdocRef.current.activeEditor;
