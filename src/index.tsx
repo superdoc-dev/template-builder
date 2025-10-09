@@ -31,6 +31,7 @@ const SuperDocTemplateBuilder = forwardRef<
     onFieldDelete,
     onFieldsChange,
     onFieldSelect,
+    onFieldCreate,
     className,
     style,
     documentHeight = "600px",
@@ -65,25 +66,25 @@ const SuperDocTemplateBuilder = forwardRef<
       const success =
         mode === "inline"
           ? editor.commands.insertStructuredContentInline?.({
-              attrs: {
-                id: fieldId,
-                alias: field.alias,
-                tag: field.metadata
-                  ? JSON.stringify(field.metadata)
-                  : field.category,
-              },
-              text: field.defaultValue || field.alias,
-            })
+            attrs: {
+              id: fieldId,
+              alias: field.alias,
+              tag: field.metadata
+                ? JSON.stringify(field.metadata)
+                : field.category,
+            },
+            text: field.defaultValue || field.alias,
+          })
           : editor.commands.insertStructuredContentBlock?.({
-              attrs: {
-                id: fieldId,
-                alias: field.alias,
-                tag: field.metadata
-                  ? JSON.stringify(field.metadata)
-                  : field.category,
-              },
-              text: field.defaultValue || field.alias,
-            });
+            attrs: {
+              id: fieldId,
+              alias: field.alias,
+              tag: field.metadata
+                ? JSON.stringify(field.metadata)
+                : field.category,
+            },
+            text: field.defaultValue || field.alias,
+          });
 
       if (success) {
         const newField: Types.TemplateField = {
@@ -269,16 +270,40 @@ const SuperDocTemplateBuilder = forwardRef<
   ]);
 
   const handleMenuSelect = useCallback(
-    (field: Types.FieldDefinition) => {
+    async (field: Types.FieldDefinition) => {
       if (triggerCleanupRef.current) {
         triggerCleanupRef.current();
         triggerCleanupRef.current = null;
       }
 
-      insertFieldInternal("inline", { ...field, alias: field.label });
+      if (field.id.startsWith("custom_") && onFieldCreate) {
+        try {
+          const createdField = await onFieldCreate(field);
+
+          if (createdField) {
+            insertFieldInternal("inline", {
+              alias: createdField.label,
+              category: createdField.category,
+              metadata: createdField.metadata,
+              defaultValue: createdField.defaultValue,
+            });
+            setMenuVisible(false);
+            return;
+          }
+        } catch (error) {
+          console.error("Field creation failed:", error);
+        }
+      }
+
+      insertFieldInternal("inline", {
+        alias: field.label,
+        category: field.category,
+        metadata: field.metadata,
+        defaultValue: field.defaultValue,
+      });
       setMenuVisible(false);
     },
-    [insertFieldInternal],
+    [insertFieldInternal, onFieldCreate],
   );
 
   const handleMenuClose = useCallback(() => {
@@ -317,7 +342,7 @@ const SuperDocTemplateBuilder = forwardRef<
   const exportTemplate = useCallback(() => {
     return {
       fields: templateFields,
-      document: superdocRef.current?.activeEditor?.state.doc.toJSON(),
+      document: superdocRef.current?.activeEditor?.exportDocx(),
     };
   }, [templateFields]);
 
@@ -384,8 +409,10 @@ const SuperDocTemplateBuilder = forwardRef<
         isVisible={menuVisible}
         position={menuPosition}
         availableFields={fields.available || []}
+        allowCreate={fields.allowCreate || false}
         onSelect={handleMenuSelect}
         onClose={handleMenuClose}
+        onCreateField={onFieldCreate}
       />
     </div>
   );

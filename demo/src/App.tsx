@@ -106,7 +106,8 @@ export function App() {
   }), []);
 
   const fieldsConfig = useMemo(() => ({
-    available: availableFields
+    available: availableFields,
+    allowCreate: true
   }), []);
 
   const listConfig = useMemo(() => ({

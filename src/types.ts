@@ -25,8 +25,10 @@ export interface FieldMenuProps {
   isVisible: boolean;
   position?: DOMRect;
   availableFields: FieldDefinition[];
+  allowCreate?: boolean;
   onSelect: (field: FieldDefinition) => void;
   onClose: () => void;
+  onCreateField?: (field: FieldDefinition) => void | Promise<FieldDefinition | void>;
 }
 
 export interface FieldListProps {
@@ -44,6 +46,7 @@ export interface DocumentConfig {
 export interface FieldsConfig {
   available?: FieldDefinition[];
   initial?: TemplateField[];
+  allowCreate?: boolean;
 }
 
 export interface MenuConfig {
@@ -70,6 +73,7 @@ export interface SuperDocTemplateBuilderProps {
   onFieldDelete?: (fieldId: string) => void;
   onFieldsChange?: (fields: TemplateField[]) => void;
   onFieldSelect?: (field: TemplateField | null) => void;
+  onFieldCreate?: (field: FieldDefinition) => void | Promise<FieldDefinition | void>;
 
   // UI
   className?: string;
