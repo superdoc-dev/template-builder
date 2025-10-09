@@ -11,7 +11,8 @@
         "@superdoc-dev/template-builder": "link:../.",
         "react": "^19.2.0",
         "react-dom": "^19.2.0",
-        "superdoc": "^0.22.3"
+        "superdoc": "^0.22.3",
+        "vitest": "^3.2.4"
     },
     "devDependencies": {
         "@types/react": "^19.2.2",
