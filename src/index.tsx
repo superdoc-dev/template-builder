@@ -107,6 +107,7 @@ const SuperDocTemplateBuilder = forwardRef<
     menu = {},
     list = {},
     toolbar,
+    slashMenu,
     onReady,
     onTrigger,
     onFieldInsert,
@@ -226,6 +227,38 @@ const SuperDocTemplateBuilder = forwardRef<
       return success;
     },
     [onFieldInsert, onFieldsChange],
+  );
+
+  const sanitizeFieldAlias = useCallback((alias?: string | null): string | null => {
+    if (!alias) return null;
+    let normalized = alias.trim();
+    if (!normalized) return null;
+    if (normalized.length > 50) {
+      normalized = `${normalized.slice(0, 47).trim().replace(/[-_. ]+$/, "")}...`;
+    }
+
+    const collapsedWhitespace = normalized.replace(/[\n\r\t]+/g, " ").replace(/\s+/g, " ");
+    const safeAlias = collapsedWhitespace.replace(/[^a-zA-Z0-9 _-]/g, "");
+    return safeAlias.trim().replace(/[-_. ]+$/, "") || null;
+  }, []);
+
+  const ensureUniqueAlias = useCallback(
+    (alias: string): string => {
+      const existingAliases = new Set(templateFields.map((field) => field.alias));
+
+      if (!existingAliases.has(alias)) return alias;
+
+      let counter = 2;
+      let candidate = `${alias} ${counter}`;
+
+      while (existingAliases.has(candidate)) {
+        counter += 1;
+        candidate = `${alias} ${counter}`;
+      }
+
+      return candidate;
+    },
+    [templateFields],
   );
 
   const updateField = useCallback(
@@ -451,19 +484,62 @@ const SuperDocTemplateBuilder = forwardRef<
         },
       };
 
+      const cleanSlashMenuItems = slashMenu?.items?.filter((item) => item.id !== "create-field") ?? [];
+
+      const createFieldItem: Types.SlashMenuItem = {
+        id: "create-field",
+        label: "Create Field",
+        icon: "🏷️",
+        showWhen: (context) => context.hasSelection,
+        action: (editorInstance, context) => {
+          const activeEditor = editorInstance ?? superdocRef.current?.activeEditor;
+          if (!activeEditor || activeEditor.state.selection?.empty) return;
+
+          const selection = activeEditor.state.selection;
+          const selectionText = context.selectedText
+            || activeEditor.state.doc.textBetween(
+              selection.from,
+              selection.to,
+              "\n",
+              "\n",
+            );
+
+          const sanitized = sanitizeFieldAlias(selectionText);
+          if (!sanitized) return;
+
+          const alias = ensureUniqueAlias(sanitized);
+          insertFieldInternal("inline", {
+            alias,
+            category: "Custom",
+            defaultValue: selectionText || alias,
+          });
+        },
+      };
+
+      const slashMenuConfig: Types.SlashMenuConfig = {
+        ...(slashMenu || {}),
+        items: [createFieldItem, ...cleanSlashMenuItems],
+      };
+
+      const modulesConfig: Record<string, any> = {
+        slashMenu: slashMenuConfig,
+      };
+
+      if (toolbarSettings) {
+        modulesConfig.toolbar = {
+          selector: toolbarSettings.selector,
+          toolbarGroups: toolbarSettings.config.toolbarGroups || ["center"],
+          excludeItems: toolbarSettings.config.excludeItems || [],
+          ...toolbarSettings.config,
+        };
+      }
+
       const instance = new SuperDoc({
         ...config,
         ...(toolbarSettings && {
           toolbar: toolbarSettings.selector,
-          modules: {
-            toolbar: {
-              selector: toolbarSettings.selector,
-              toolbarGroups: toolbarSettings.config.toolbarGroups || ["center"],
-              excludeItems: toolbarSettings.config.excludeItems || [],
-              ...toolbarSettings.config,
-            },
-          },
         }),
+        modules: modulesConfig,
       });
 
       superdocRef.current = instance;

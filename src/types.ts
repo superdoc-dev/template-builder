@@ -21,6 +21,24 @@ export interface TriggerEvent {
   cleanup: () => void;
 }
 
+export interface SlashMenuContext {
+  hasSelection: boolean;
+  selectedText?: string;
+}
+
+export interface SlashMenuItem {
+  id: string;
+  label: string;
+  icon?: string;
+  showWhen?: (context: SlashMenuContext) => boolean;
+  action: (editor: any | null | undefined, context: SlashMenuContext) => void | Promise<void>;
+}
+
+export interface SlashMenuConfig {
+  items?: SlashMenuItem[];
+  [key: string]: unknown;
+}
+
 export interface FieldMenuProps {
   isVisible: boolean;
   position?: DOMRect;
@@ -81,6 +99,7 @@ export interface SuperDocTemplateBuilderProps {
   menu?: MenuConfig;
   list?: ListConfig;
   toolbar?: boolean | string | ToolbarConfig;
+  slashMenu?: SlashMenuConfig;
 
   // Events
   onReady?: () => void;
