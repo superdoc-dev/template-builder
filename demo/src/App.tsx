@@ -46,7 +46,14 @@ export function App() {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [events, setEvents] = useState<string[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [documentSource, setDocumentSource] = useState<string | File>(
+    "https://storage.googleapis.com/public_static_hosting/public_demo_docs/service_agreement.docx",
+  );
   const builderRef = useRef<SuperDocTemplateBuilderHandle>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importingRef = useRef(false);
 
   const log = useCallback((msg: string) => {
     const time = new Date().toLocaleTimeString();
@@ -75,6 +82,12 @@ export function App() {
 
   const handleReady = useCallback(() => {
     log('✓ Template builder ready');
+    if (importingRef.current) {
+      log('📄 Document imported');
+      importingRef.current = false;
+      setImportError(null);
+      setIsImporting(false);
+    }
   }, [log]);
 
   const handleTrigger = useCallback(() => {
@@ -114,9 +127,35 @@ export function App() {
   };
 
   const documentConfig = useMemo(() => ({
-    source: "https://storage.googleapis.com/public_static_hosting/public_demo_docs/service_agreement.docx",
+    source: documentSource,
     mode: 'editing' as const
-  }), []);
+  }), [documentSource]);
+
+  const handleImportButtonClick = useCallback(() => {
+    if (isImporting) return;
+    fileInputRef.current?.click();
+  }, [isImporting]);
+
+  const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (extension !== 'docx') {
+      const message = 'Invalid file type. Please choose a .docx file.';
+      setImportError(message);
+      log('⚠️ ' + message);
+      return;
+    }
+
+    importingRef.current = true;
+    setImportError(null);
+    setIsImporting(true);
+    setDocumentSource(file);
+    log(`📥 Importing "${file.name}"`);
+  }, [log]);
 
   const fieldsConfig = useMemo(() => ({
     available: availableFields,
@@ -160,15 +199,35 @@ export function App() {
             <span className="hint">Tab/Shift+Tab to navigate</span>
           </div>
           <div className="toolbar-right">
+            <input
+              type="file"
+              accept=".docx"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileInputChange}
+            />
+            <button
+              onClick={handleImportButtonClick}
+              className="import-button"
+              disabled={isImporting || isDownloading}
+            >
+              {isImporting ? 'Importing…' : 'Import File'}
+            </button>
             <button
               onClick={handleExportTemplate}
               className="export-button"
-              disabled={isDownloading}
+              disabled={isDownloading || isImporting}
             >
               {isDownloading ? "Exporting..." : "Export Template"}
             </button>
           </div>
         </div>
+
+        {importError && (
+          <div className="toolbar-error" role="alert">
+            {importError}
+          </div>
+        )}
 
         <SuperDocTemplateBuilder
           ref={builderRef}
