@@ -63,11 +63,24 @@ export interface ListConfig {
   position?: "left" | "right";
 }
 
+export interface ToolbarConfig {
+  selector?: string;
+  toolbarGroups?: string[];
+  groups?: Record<string, string[]>;
+  fonts?: string[] | null;
+  hideButtons?: boolean;
+  responsiveToContainer?: boolean;
+  excludeItems?: string[];
+  texts?: Record<string, string>;
+  icons?: Record<string, any>;
+}
+
 export interface SuperDocTemplateBuilderProps {
   document?: DocumentConfig;
   fields?: FieldsConfig;
   menu?: MenuConfig;
   list?: ListConfig;
+  toolbar?: boolean | string | ToolbarConfig;
 
   // Events
   onReady?: () => void;

@@ -92,6 +92,14 @@ function TemplateEditor() {
     component: CustomFieldList      // Custom list component
   }}
   
+  // Toolbar (optional)
+  toolbar={true}                   // Render built-in toolbar container
+  // toolbar="#my-toolbar"          // Mount into existing element
+  // toolbar={{                     // Configure built-in toolbar
+  //   toolbarGroups: ['center'],
+  //   excludeItems: ['italic', 'bold'],
+  // }}
+  
   // Event handlers
   onReady={() => {}}
   onTrigger={(event) => {}}

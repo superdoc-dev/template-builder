@@ -175,6 +175,7 @@ export function App() {
           document={documentConfig}
           fields={fieldsConfig}
           list={listConfig}
+          toolbar={true}
           onReady={handleReady}
           onTrigger={handleTrigger}
           onFieldInsert={handleFieldInsert}

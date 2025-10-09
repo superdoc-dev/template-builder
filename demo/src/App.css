@@ -21,7 +21,7 @@ header {
 }
 
 .header-content {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
     display: flex;
     justify-content: space-between;
@@ -66,7 +66,7 @@ header {
 
 /* Container */
 .container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 2rem auto;
     padding: 0 2rem;
 }
@@ -229,7 +229,7 @@ header {
         gap: 0.5rem;
     }
 
-    .superdoc-template-builder > div {
+    .superdoc-template-builder>div {
         flex-direction: column !important;
     }
 

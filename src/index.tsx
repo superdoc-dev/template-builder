@@ -68,6 +68,35 @@ const areTemplateFieldsEqual = (
   return true;
 };
 
+const resolveToolbar = (
+  toolbar: Types.SuperDocTemplateBuilderProps["toolbar"],
+) => {
+  if (!toolbar) return null;
+
+  if (toolbar === true) {
+    return {
+      selector: "#superdoc-toolbar",
+      config: {} as Omit<Types.ToolbarConfig, "selector">,
+      renderDefaultContainer: true,
+    };
+  }
+
+  if (typeof toolbar === "string") {
+    return {
+      selector: toolbar,
+      config: {} as Omit<Types.ToolbarConfig, "selector">,
+      renderDefaultContainer: false,
+    };
+  }
+
+  const { selector, ...config } = toolbar;
+  return {
+    selector: selector || "#superdoc-toolbar",
+    config,
+    renderDefaultContainer: selector === undefined,
+  };
+};
+
 const SuperDocTemplateBuilder = forwardRef<
   Types.SuperDocTemplateBuilderHandle,
   Types.SuperDocTemplateBuilderProps
@@ -77,6 +106,7 @@ const SuperDocTemplateBuilder = forwardRef<
     fields = {},
     menu = {},
     list = {},
+    toolbar,
     onReady,
     onTrigger,
     onFieldInsert,
@@ -336,7 +366,7 @@ const SuperDocTemplateBuilder = forwardRef<
     const initSuperDoc = async () => {
       const { SuperDoc } = await import("superdoc");
 
-      const instance = new SuperDoc({
+      const config: Record<string, unknown> = {
         selector: containerRef.current!,
         document: document?.source,
         documentMode: document?.mode || "editing",
@@ -419,6 +449,21 @@ const SuperDocTemplateBuilder = forwardRef<
 
           onReady?.();
         },
+      };
+
+      const instance = new SuperDoc({
+        ...config,
+        ...(toolbarSettings && {
+          toolbar: toolbarSettings.selector,
+          modules: {
+            toolbar: {
+              selector: toolbarSettings.selector,
+              toolbarGroups: toolbarSettings.config.toolbarGroups || ["center"],
+              excludeItems: toolbarSettings.config.excludeItems || [],
+              ...toolbarSettings.config,
+            },
+          },
+        }),
       });
 
       superdocRef.current = instance;
@@ -441,6 +486,7 @@ const SuperDocTemplateBuilder = forwardRef<
     discoverFields,
     onReady,
     onTrigger,
+    toolbar,
   ]);
 
   const handleMenuSelect = useCallback(
@@ -519,12 +565,11 @@ const SuperDocTemplateBuilder = forwardRef<
 
   const exportTemplate = useCallback(
     async (options?: { fileName?: string }): Promise<void> => {
-      const editor = superdocRef.current?.activeEditor;
-      if (!editor) return;
 
       try {
-        await editor.exportDocx?.({
-          fileName: options?.fileName || "document.docx",
+        await superdocRef.current?.export({
+          exportType: ["docx"],
+          exportedName: options?.fileName ? options?.fileName : "document"
         });
       } catch (error) {
         console.error("Failed to export DOCX", error);
@@ -551,6 +596,8 @@ const SuperDocTemplateBuilder = forwardRef<
   const MenuComponent = menu.component || FieldMenu;
   const ListComponent = list.component || FieldList;
 
+  const toolbarSettings = resolveToolbar(toolbar);
+
   return (
     <div
       className={`superdoc-template-builder ${className || ""}`}
@@ -571,6 +618,13 @@ const SuperDocTemplateBuilder = forwardRef<
 
         {/* Document */}
         <div className="superdoc-template-builder-document" style={{ flex: 1 }}>
+          {toolbarSettings?.renderDefaultContainer && (
+            <div
+              id="superdoc-toolbar"
+              className="superdoc-template-builder-toolbar"
+              data-testid="template-builder-toolbar"
+            />
+          )}
           <div
             ref={containerRef}
             className="superdoc-template-builder-editor"
