@@ -15,6 +15,59 @@ export { FieldMenu, FieldList };
 
 type Editor = NonNullable<SuperDoc["activeEditor"]>;
 
+const getTemplateFieldsFromEditor = (
+  editor: Editor,
+): Types.TemplateField[] => {
+  const structuredContentHelpers =
+    (editor.helpers as any)?.structuredContentCommands;
+
+  if (!structuredContentHelpers?.getStructuredContentTags) {
+    return [];
+  }
+
+  const tags =
+    structuredContentHelpers.getStructuredContentTags(editor.state) || [];
+
+  return tags
+    .map((entry: any) => {
+      const node = entry?.node ?? entry;
+      const attrs = node?.attrs ?? {};
+
+      return {
+        id: attrs.id,
+        alias: attrs.alias || attrs.label || "",
+        tag: attrs.tag,
+      } as Types.TemplateField;
+    })
+    .filter((field: Types.TemplateField) => Boolean(field.id));
+};
+
+const areTemplateFieldsEqual = (
+  a: Types.TemplateField[],
+  b: Types.TemplateField[],
+): boolean => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+
+  for (let index = 0; index < a.length; index += 1) {
+    const left = a[index];
+    const right = b[index];
+
+    if (!right) return false;
+
+    if (
+      left.id !== right.id ||
+      left.alias !== right.alias ||
+      left.tag !== right.tag ||
+      left.position !== right.position
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const SuperDocTemplateBuilder = forwardRef<
   Types.SuperDocTemplateBuilderHandle,
   Types.SuperDocTemplateBuilderProps
@@ -173,21 +226,73 @@ const SuperDocTemplateBuilder = forwardRef<
 
   const deleteField = useCallback(
     (id: string): boolean => {
-      if (!superdocRef.current?.activeEditor) return false;
+      const editor = superdocRef.current?.activeEditor;
 
-      const editor = superdocRef.current.activeEditor;
-      const success = editor.commands.deleteStructuredContentById?.(id);
+      if (!editor) {
+        console.warn(
+          "[SuperDocTemplateBuilder] deleteField called without active editor",
+        );
 
-      if (success) {
+        let removed = false;
         setTemplateFields((prev) => {
-          const updated = prev.filter((f) => f.id !== id);
+          if (!prev.some((field) => field.id === id)) return prev;
+
+          const updated = prev.filter((field) => field.id !== id);
+          removed = true;
           onFieldsChange?.(updated);
           return updated;
         });
-        onFieldDelete?.(id);
+
+        if (removed) {
+          onFieldDelete?.(id);
+          setSelectedFieldId((current) => (current === id ? null : current));
+        }
+
+        return removed;
       }
 
-      return success;
+      let commandResult = false;
+      try {
+        commandResult =
+          editor.commands.deleteStructuredContentById?.(id) ?? false;
+      } catch (error) {
+        console.error(
+          "[SuperDocTemplateBuilder] Delete command failed:",
+          error,
+        );
+      }
+
+      let documentFields = getTemplateFieldsFromEditor(editor);
+      const fieldStillPresent = documentFields.some((field) => field.id === id);
+
+      if (!commandResult && fieldStillPresent) {
+        documentFields = documentFields.filter((field) => field.id !== id);
+      }
+
+      let removedFromState = false;
+
+      setTemplateFields((prev) => {
+        if (areTemplateFieldsEqual(prev, documentFields)) {
+          return prev;
+        }
+
+        const prevHadField = prev.some((field) => field.id === id);
+        const nextHasField = documentFields.some((field) => field.id === id);
+
+        if (prevHadField && !nextHasField) {
+          removedFromState = true;
+        }
+
+        onFieldsChange?.(documentFields);
+        return documentFields;
+      });
+
+      if (removedFromState) {
+        onFieldDelete?.(id);
+        setSelectedFieldId((current) => (current === id ? null : current));
+      }
+
+      return commandResult || removedFromState;
     },
     [onFieldDelete, onFieldsChange],
   );
@@ -210,21 +315,16 @@ const SuperDocTemplateBuilder = forwardRef<
     (editor: Editor) => {
       if (!editor) return;
 
-      const tags =
-        editor.helpers.structuredContentCommands.getStructuredContentTags(
-          editor.state,
-        );
+      const discovered = getTemplateFieldsFromEditor(editor);
 
-      const discovered: Types.TemplateField[] = tags
-        .map(({ node }: any) => ({
-          id: node.attrs.id,
-          alias: node.attrs.alias || node.attrs.label || "",
-          tag: node.attrs.tag,
-        }))
-        .filter((f: Types.TemplateField) => f.id);
+      setTemplateFields((prev) => {
+        if (areTemplateFieldsEqual(prev, discovered)) {
+          return prev;
+        }
 
-      setTemplateFields(discovered);
-      onFieldsChange?.(discovered);
+        onFieldsChange?.(discovered);
+        return discovered;
+      });
     },
     [onFieldsChange],
   );
