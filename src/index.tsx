@@ -28,18 +28,16 @@ const getTemplateFieldsFromEditor = (
   const tags =
     structuredContentHelpers.getStructuredContentTags(editor.state) || [];
 
-  return tags
-    .map((entry: any) => {
-      const node = entry?.node ?? entry;
-      const attrs = node?.attrs ?? {};
+  return tags.map((entry: any) => {
+    const node = entry?.node ?? entry;
+    const attrs = node?.attrs ?? {};
 
-      return {
-        id: attrs.id,
-        alias: attrs.alias || attrs.label || "",
-        tag: attrs.tag,
-      } as Types.TemplateField;
-    })
-    .filter((field: Types.TemplateField) => Boolean(field.id));
+    return {
+      id: attrs.id,
+      alias: attrs.alias || attrs.label || "",
+      tag: attrs.tag,
+    } as Types.TemplateField;
+  });
 };
 
 const areTemplateFieldsEqual = (
