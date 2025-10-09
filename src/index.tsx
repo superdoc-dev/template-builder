@@ -514,6 +514,7 @@ const SuperDocTemplateBuilder = forwardRef<
         id: "create-field",
         label: "Create Field",
         icon: "🏷️",
+        allowedTriggers: ['click'],
         showWhen: (context) => context.hasSelection,
         action: (editorInstance, context) => {
           const activeEditor = editorInstance ?? superdocRef.current?.activeEditor;
@@ -540,9 +541,17 @@ const SuperDocTemplateBuilder = forwardRef<
         },
       };
 
-      const slashMenuConfig: Types.SlashMenuConfig = {
-        ...(slashMenu || {}),
+      const templateBuilderSection = {
+        id: 'template-builder-actions',
         items: [createFieldItem, ...cleanSlashMenuItems],
+      };
+
+      const userCustomItems = slashMenu?.customItems || [];
+
+      const slashMenuConfig: Types.SlashMenuConfig = {
+        ...slashMenu,
+        includeDefaultItems: slashMenu?.includeDefaultItems ?? true,
+        customItems: [templateBuilderSection, ...userCustomItems],
       };
 
       const modulesConfig: Record<string, any> = {
@@ -591,6 +600,10 @@ const SuperDocTemplateBuilder = forwardRef<
     onReady,
     onTrigger,
     toolbar,
+    slashMenu,
+    sanitizeFieldAlias,
+    ensureUniqueAlias,
+    insertFieldInternal,
   ]);
 
   const handleMenuSelect = useCallback(

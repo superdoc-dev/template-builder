@@ -24,6 +24,7 @@ export interface TriggerEvent {
 export interface SlashMenuContext {
   hasSelection: boolean;
   selectedText?: string;
+  [key: string]: unknown;
 }
 
 export interface SlashMenuItem {
@@ -32,10 +33,16 @@ export interface SlashMenuItem {
   icon?: string;
   showWhen?: (context: SlashMenuContext) => boolean;
   action: (editor: any | null | undefined, context: SlashMenuContext) => void | Promise<void>;
+  [key: string]: unknown;
 }
 
 export interface SlashMenuConfig {
   items?: SlashMenuItem[];
+  customItems?: Array<{
+    id: string;
+    items: SlashMenuItem[];
+  }>;
+  includeDefaultItems?: boolean;
   [key: string]: unknown;
 }
 
