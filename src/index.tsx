@@ -97,6 +97,26 @@ const resolveToolbar = (
   };
 };
 
+const MENU_VIEWPORT_PADDING = 10;
+const MENU_APPROX_WIDTH = 250;
+const MENU_APPROX_HEIGHT = 300;
+
+const clampToViewport = (rect: DOMRect): DOMRect => {
+  const maxLeft = window.innerWidth - MENU_APPROX_WIDTH - MENU_VIEWPORT_PADDING;
+  const maxTop =
+    window.innerHeight - MENU_APPROX_HEIGHT - MENU_VIEWPORT_PADDING;
+
+  const clampedLeft = Math.min(rect.left, maxLeft);
+  const clampedTop = Math.min(rect.top, maxTop);
+
+  return new DOMRect(
+    Math.max(clampedLeft, MENU_VIEWPORT_PADDING),
+    Math.max(clampedTop, MENU_VIEWPORT_PADDING),
+    rect.width,
+    rect.height,
+  );
+};
+
 const SuperDocTemplateBuilder = forwardRef<
   Types.SuperDocTemplateBuilderHandle,
   Types.SuperDocTemplateBuilderProps
@@ -385,7 +405,9 @@ const SuperDocTemplateBuilder = forwardRef<
 
                 if (text === trigger) {
                   const coords = e.view.coordsAtPos(from);
-                  const bounds = new DOMRect(coords.left, coords.top, 0, 0);
+                  const bounds = clampToViewport(
+                    new DOMRect(coords.left, coords.top, 0, 0),
+                  );
 
                   const cleanup = () => {
                     const editor = superdocRef.current?.activeEditor;
@@ -435,7 +457,9 @@ const SuperDocTemplateBuilder = forwardRef<
               updateMenuFilter(queryText);
 
               const coords = e.view.coordsAtPos(from);
-              const bounds = new DOMRect(coords.left, coords.top, 0, 0);
+              const bounds = clampToViewport(
+                new DOMRect(coords.left, coords.top, 0, 0),
+              );
               setMenuPosition(bounds);
             });
 
