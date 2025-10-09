@@ -51,3 +51,15 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           pnpm dlx semantic-release
+
+      - name: Sync stable back to main
+        if: github.ref == 'refs/heads/stable'
+        env:
+          GITHUB_TOKEN: ${{ steps.generate_token.outputs.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch origin main stable
+          git checkout main
+          git merge origin/stable -m "chore: sync stable release to main"
+          git push origin main
