@@ -496,12 +496,16 @@ const SuperDocTemplateBuilder = forwardRef<
     initSuperDoc();
 
     return () => {
-      if (superdocRef.current) {
-        if (typeof superdocRef.current.destroy === "function") {
-          superdocRef.current.destroy();
-        }
-        superdocRef.current = null;
+      triggerCleanupRef.current = null;
+      menuTriggerFromRef.current = null;
+
+      const instance = superdocRef.current;
+
+      if (instance && typeof instance.destroy === "function") {
+        instance.destroy();
       }
+
+      superdocRef.current = null;
     };
   }, [
     document?.source,
