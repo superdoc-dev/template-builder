@@ -49,8 +49,37 @@ const SuperDocTemplateBuilder = forwardRef<
   const triggerCleanupRef = useRef<(() => void) | null>(null);
   const fieldsRef = useRef(fields);
   fieldsRef.current = fields;
+  const templateFieldsRef = useRef<Types.TemplateField[]>(
+    fields.initial || [],
+  );
+
+  useEffect(() => {
+    templateFieldsRef.current = templateFields;
+  }, [templateFields]);
 
   const trigger = menu.trigger || "{{";
+
+  const focusField = useCallback(
+    (
+      fieldId: string,
+      options?: { field?: Types.TemplateField | null },
+    ) => {
+      if (!fieldId) return;
+
+      const editor = superdocRef.current?.activeEditor;
+      editor?.commands.selectStructuredContentById?.(fieldId);
+
+      setSelectedFieldId(fieldId);
+
+      const resolvedField =
+        options?.field ??
+        templateFieldsRef.current.find((field) => field.id === fieldId) ??
+        null;
+
+      onFieldSelect?.(resolvedField ?? null);
+    },
+    [onFieldSelect],
+  );
 
   // Field operations
   const insertFieldInternal = useCallback(
@@ -96,15 +125,17 @@ const SuperDocTemplateBuilder = forwardRef<
         setTemplateFields((prev) => {
           const updated = [...prev, newField];
           onFieldsChange?.(updated);
+          templateFieldsRef.current = updated;
           return updated;
         });
 
         onFieldInsert?.(newField);
+        focusField(fieldId, { field: newField });
       }
 
       return success;
     },
-    [onFieldInsert, onFieldsChange],
+    [focusField, onFieldInsert, onFieldsChange],
   );
 
   const updateField = useCallback(
@@ -122,6 +153,7 @@ const SuperDocTemplateBuilder = forwardRef<
             f.id === id ? { ...f, ...updates } : f,
           );
           onFieldsChange?.(updated);
+          templateFieldsRef.current = updated;
           const field = updated.find((f) => f.id === id);
           if (field) onFieldUpdate?.(field);
           return updated;
@@ -144,28 +176,26 @@ const SuperDocTemplateBuilder = forwardRef<
         setTemplateFields((prev) => {
           const updated = prev.filter((f) => f.id !== id);
           onFieldsChange?.(updated);
+          templateFieldsRef.current = updated;
           return updated;
         });
         onFieldDelete?.(id);
+        if (selectedFieldId === id) {
+          setSelectedFieldId(null);
+          onFieldSelect?.(null);
+        }
       }
 
       return success;
     },
-    [onFieldDelete, onFieldsChange],
+    [onFieldDelete, onFieldSelect, onFieldsChange, selectedFieldId],
   );
 
   const selectField = useCallback(
     (id: string) => {
-      if (!superdocRef.current?.activeEditor) return;
-
-      const editor = superdocRef.current.activeEditor;
-      editor.commands.selectStructuredContentById?.(id);
-      setSelectedFieldId(id);
-
-      const field = templateFields.find((f) => f.id === id);
-      if (field) onFieldSelect?.(field);
+      focusField(id);
     },
-    [templateFields, onFieldSelect],
+    [focusField],
   );
 
   const discoverFields = useCallback(
@@ -186,6 +216,7 @@ const SuperDocTemplateBuilder = forwardRef<
         .filter((f: Types.TemplateField) => f.id);
 
       setTemplateFields(discovered);
+      templateFieldsRef.current = discovered;
       onFieldsChange?.(discovered);
     },
     [onFieldsChange],
@@ -346,6 +377,13 @@ const SuperDocTemplateBuilder = forwardRef<
     };
   }, [templateFields]);
 
+  const handleFieldFocus = useCallback(
+    (field: Types.TemplateField) => {
+      focusField(field.id, { field });
+    },
+    [focusField],
+  );
+
   // Imperative handle
   useImperativeHandle(ref, () => ({
     insertField: (field) => insertFieldInternal("inline", field),
@@ -374,7 +412,7 @@ const SuperDocTemplateBuilder = forwardRef<
           <div className="superdoc-template-builder-sidebar">
             <ListComponent
               fields={templateFields}
-              onSelect={(field) => selectField(field.id)}
+              onSelect={handleFieldFocus}
               onDelete={deleteField}
               selectedFieldId={selectedFieldId || undefined}
             />
@@ -396,7 +434,7 @@ const SuperDocTemplateBuilder = forwardRef<
           <div className="superdoc-template-builder-sidebar">
             <ListComponent
               fields={templateFields}
-              onSelect={(field) => selectField(field.id)}
+              onSelect={handleFieldFocus}
               onDelete={deleteField}
               selectedFieldId={selectedFieldId || undefined}
             />

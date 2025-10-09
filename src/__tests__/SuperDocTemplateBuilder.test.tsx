@@ -48,6 +48,7 @@ beforeEach(() => {
   superDocMock.mockUpdateStructuredContentById.mockReturnValue(true);
   superDocMock.mockDeleteStructuredContentById.mockReturnValue(true);
   superDocMock.mockSelectStructuredContentById.mockReturnValue(true);
+  superDocMock.mockExportDocx.mockReturnValue({});
 });
 
 describe("SuperDocTemplateBuilder component", () => {
@@ -85,7 +86,7 @@ describe("SuperDocTemplateBuilder component", () => {
     });
 
     // Check that field menu is visible
-    expect(screen.getByText("Insert Field")).toBeInTheDocument();
+    expect(screen.getByText("Customer Name")).toBeInTheDocument();
   });
 
   it("inserts fields using ref methods", async () => {
@@ -98,8 +99,11 @@ describe("SuperDocTemplateBuilder component", () => {
     await waitFor(() => expect(ref.current).toBeTruthy());
 
     // Insert inline field
-    const success = ref.current?.insertField({
-      alias: "Test Field",
+    let success: boolean | undefined;
+    act(() => {
+      success = ref.current?.insertField({
+        alias: "Test Field",
+      });
     });
 
     expect(success).toBe(true);
@@ -110,10 +114,14 @@ describe("SuperDocTemplateBuilder component", () => {
         }),
       }),
     );
+    expect(superDocMock.mockSelectStructuredContentById).toHaveBeenCalled();
 
     // Insert block field
-    const blockSuccess = ref.current?.insertBlockField({
-      alias: "Block Field",
+    let blockSuccess: boolean | undefined;
+    act(() => {
+      blockSuccess = ref.current?.insertBlockField({
+        alias: "Block Field",
+      });
     });
 
     expect(blockSuccess).toBe(true);
@@ -124,6 +132,7 @@ describe("SuperDocTemplateBuilder component", () => {
         }),
       }),
     );
+    expect(superDocMock.mockSelectStructuredContentById).toHaveBeenCalledTimes(2);
   });
 
   it("updates and deletes fields", async () => {
@@ -150,8 +159,11 @@ describe("SuperDocTemplateBuilder component", () => {
     await waitFor(() => expect(ref.current).toBeTruthy());
 
     // Update field
-    const updateSuccess = ref.current?.updateField("existing-field", {
-      alias: "Updated Field",
+    let updateSuccess: boolean | undefined;
+    act(() => {
+      updateSuccess = ref.current?.updateField("existing-field", {
+        alias: "Updated Field",
+      });
     });
 
     expect(updateSuccess).toBe(true);
@@ -163,7 +175,10 @@ describe("SuperDocTemplateBuilder component", () => {
     );
 
     // Delete field
-    const deleteSuccess = ref.current?.deleteField("existing-field");
+    let deleteSuccess: boolean | undefined;
+    act(() => {
+      deleteSuccess = ref.current?.deleteField("existing-field");
+    });
 
     expect(deleteSuccess).toBe(true);
     expect(superDocMock.mockDeleteStructuredContentById).toHaveBeenCalledWith(
@@ -283,7 +298,7 @@ describe("SuperDocTemplateBuilder component", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Insert Field")).toBeInTheDocument();
+      expect(screen.getByText("Customer Name")).toBeInTheDocument();
     });
 
     // Select a field from menu
@@ -293,6 +308,42 @@ describe("SuperDocTemplateBuilder component", () => {
     await waitFor(() => {
       expect(superDocMock.mockInsertStructuredContentInline).toHaveBeenCalled();
       expect(mockEditor.state.tr.delete).toHaveBeenCalled(); // Cleanup trigger
+      expect(superDocMock.mockSelectStructuredContentById).toHaveBeenCalled();
     });
+  });
+
+  it("focuses field when selected from the field list", async () => {
+    const onFieldSelect = vi.fn();
+
+    superDocMock.mockGetStructuredContentTags.mockReturnValue([
+      {
+        node: {
+          attrs: { id: "field1", alias: "Customer Name", tag: "contact" },
+        },
+      },
+      {
+        node: {
+          attrs: { id: "field2", alias: "Invoice Date", tag: "invoice" },
+        },
+      },
+    ]);
+
+    renderComponent({ list: { position: "right" }, onFieldSelect });
+
+    await waitForBuilderReady();
+
+    const fieldButton = screen.getByText("Customer Name");
+
+    await userEvent.click(fieldButton);
+
+    await waitFor(() => {
+      expect(superDocMock.mockSelectStructuredContentById).toHaveBeenCalledWith(
+        "field1",
+      );
+    });
+
+    expect(onFieldSelect).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "field1", alias: "Customer Name" }),
+    );
   });
 });

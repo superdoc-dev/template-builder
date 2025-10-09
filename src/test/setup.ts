@@ -6,6 +6,7 @@ const mockGetStructuredContentTags = vi.fn(() => []);
 const mockUpdateStructuredContentById = vi.fn();
 const mockDeleteStructuredContentById = vi.fn();
 const mockSelectStructuredContentById = vi.fn();
+const mockExportDocx = vi.fn(() => ({}));
 const mockDestroy = vi.fn();
 
 const mockEditor = {
@@ -37,6 +38,7 @@ const mockEditor = {
     dispatch: vi.fn(),
     coordsAtPos: vi.fn(() => ({ left: 0, top: 0 })),
   },
+  exportDocx: mockExportDocx,
   on: vi.fn(),
 };
 
@@ -69,6 +71,7 @@ const SuperDocMock = vi.fn((options: any = {}) => {
   mockDeleteStructuredContentById;
 (SuperDocMock as any).mockSelectStructuredContentById =
   mockSelectStructuredContentById;
+(SuperDocMock as any).mockExportDocx = mockExportDocx;
 (SuperDocMock as any).mockDestroy = mockDestroy;
 
 vi.mock("superdoc", () => ({
