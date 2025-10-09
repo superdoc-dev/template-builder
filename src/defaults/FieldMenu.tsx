@@ -5,6 +5,8 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
   isVisible,
   position,
   availableFields,
+  filteredFields,
+  filterQuery,
   allowCreate,
   onSelect,
   onClose,
@@ -37,6 +39,10 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
 
   if (!isVisible) return null;
 
+  const visibleFields = filteredFields ?? availableFields;
+  const hasFilter = Boolean(filterQuery);
+  const hasVisibleFields = visibleFields.length > 0;
+
   const handleCreateField = async () => {
     const trimmedName = newFieldName.trim();
     if (!trimmedName) return;
@@ -62,6 +68,72 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
 
   return (
     <div className="superdoc-field-menu" style={menuStyle}>
+      <div
+        style={{
+          padding: "0 16px 8px 16px",
+          borderBottom: "1px solid #f3f4f6",
+          marginBottom: "8px",
+        }}
+      >
+        <div
+          style={{
+            fontSize: "12px",
+            color: "#6b7280",
+            textTransform: "uppercase",
+          }}
+        >
+          Insert Field
+        </div>
+        {hasFilter && (
+          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+            Filtering results for
+            <span
+              style={{ fontWeight: 600, color: "#111827", marginLeft: "4px" }}
+            >
+              {filterQuery}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {hasVisibleFields ? (
+        visibleFields.map((field) => (
+          <div
+            key={field.id}
+            className="field-menu-item"
+            onClick={() => onSelect(field)}
+            style={{
+              padding: "8px 16px",
+              cursor: "pointer",
+            }}
+          >
+            <span style={{ fontWeight: 500 }}>{field.label}</span>
+            {field.category && (
+              <span
+                style={{
+                  fontSize: "0.85em",
+                  color: "#666",
+                  marginLeft: "8px",
+                }}
+              >
+                {field.category}
+              </span>
+            )}
+          </div>
+        ))
+      ) : (
+        <div
+          style={{
+            padding: "16px",
+            fontSize: "13px",
+            color: "#6b7280",
+            textAlign: "center",
+          }}
+        >
+          No matching fields
+        </div>
+      )}
+
       {allowCreate && !isCreating && (
         <div
           className="field-menu-item"
@@ -138,40 +210,6 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
           </div>
         </div>
       )}
-
-      {allowCreate && availableFields.length > 0 && (
-        <div
-          style={{
-            borderTop: "1px solid #eee",
-            margin: "4px 0",
-          }}
-        />
-      )}
-
-      {availableFields.map((field) => (
-        <div
-          key={field.id}
-          className="field-menu-item"
-          onClick={() => onSelect(field)}
-          style={{
-            padding: "8px 16px",
-            cursor: "pointer",
-          }}
-        >
-          <span style={{ fontWeight: 500 }}>{field.label}</span>
-          {field.category && (
-            <span
-              style={{
-                fontSize: "0.85em",
-                color: "#666",
-                marginLeft: "8px",
-              }}
-            >
-              {field.category}
-            </span>
-          )}
-        </div>
-      ))}
 
       <div
         style={{

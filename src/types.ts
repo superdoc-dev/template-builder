@@ -25,6 +25,8 @@ export interface FieldMenuProps {
   isVisible: boolean;
   position?: DOMRect;
   availableFields: FieldDefinition[];
+  filteredFields?: FieldDefinition[];
+  filterQuery?: string;
   allowCreate?: boolean;
   onSelect: (field: FieldDefinition) => void;
   onClose: () => void;
