@@ -258,13 +258,15 @@ const SuperDocTemplateBuilder = forwardRef<
                   const bounds = new DOMRect(coords.left, coords.top, 0, 0);
 
                   const cleanup = () => {
-                    const currentPos = e.state.selection.from;
-                    const tr = e.state.tr.delete(triggerStart, currentPos);
-                    e.view.dispatch(tr);
+                    const editor = superdocRef.current?.activeEditor;
+                    if (!editor) return;
+                    const currentPos = editor.state.selection.from;
+                    const tr = editor.state.tr.delete(triggerStart, currentPos);
+                    editor.view.dispatch(tr);
                   };
 
                   triggerCleanupRef.current = cleanup;
-                  menuTriggerFromRef.current = from;
+                  menuTriggerFromRef.current = triggerStart;
                   setMenuPosition(bounds);
                   setMenuVisible(true);
                   resetMenuFilter();
