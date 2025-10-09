@@ -25,10 +25,14 @@ export interface FieldMenuProps {
   isVisible: boolean;
   position?: DOMRect;
   availableFields: FieldDefinition[];
+  filteredFields?: FieldDefinition[];
+  filterQuery?: string;
   allowCreate?: boolean;
   onSelect: (field: FieldDefinition) => void;
   onClose: () => void;
-  onCreateField?: (field: FieldDefinition) => void | Promise<FieldDefinition | void>;
+  onCreateField?: (
+    field: FieldDefinition,
+  ) => void | Promise<FieldDefinition | void>;
 }
 
 export interface FieldListProps {
@@ -73,7 +77,9 @@ export interface SuperDocTemplateBuilderProps {
   onFieldDelete?: (fieldId: string) => void;
   onFieldsChange?: (fields: TemplateField[]) => void;
   onFieldSelect?: (field: TemplateField | null) => void;
-  onFieldCreate?: (field: FieldDefinition) => void | Promise<FieldDefinition | void>;
+  onFieldCreate?: (
+    field: FieldDefinition,
+  ) => void | Promise<FieldDefinition | void>;
 
   // UI
   className?: string;

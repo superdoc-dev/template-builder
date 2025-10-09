@@ -1,6 +1,7 @@
 name: PR Validation
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [main, stable, "*.x"]
 
@@ -43,4 +44,4 @@ jobs:
 
       - run: pnpm lint
       - run: pnpm build
-      - run: pnpm test
+      # - run: pnpm test

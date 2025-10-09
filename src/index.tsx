@@ -15,6 +15,57 @@ export { FieldMenu, FieldList };
 
 type Editor = NonNullable<SuperDoc["activeEditor"]>;
 
+const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
+  const structuredContentHelpers = (editor.helpers as any)
+    ?.structuredContentCommands;
+
+  if (!structuredContentHelpers?.getStructuredContentTags) {
+    return [];
+  }
+
+  const tags =
+    structuredContentHelpers.getStructuredContentTags(editor.state) || [];
+
+  return tags
+    .map((entry: any) => {
+      const node = entry?.node ?? entry;
+      const attrs = node?.attrs ?? {};
+
+      return {
+        id: attrs.id,
+        alias: attrs.alias || attrs.label || "",
+        tag: attrs.tag,
+      } as Types.TemplateField;
+    })
+    .filter((field: Types.TemplateField) => Boolean(field.id));
+};
+
+const areTemplateFieldsEqual = (
+  a: Types.TemplateField[],
+  b: Types.TemplateField[],
+): boolean => {
+  if (a === b) return true;
+  if (a.length !== b.length) return false;
+
+  for (let index = 0; index < a.length; index += 1) {
+    const left = a[index];
+    const right = b[index];
+
+    if (!right) return false;
+
+    if (
+      left.id !== right.id ||
+      left.alias !== right.alias ||
+      left.tag !== right.tag ||
+      left.position !== right.position
+    ) {
+      return false;
+    }
+  }
+
+  return true;
+};
+
 const SuperDocTemplateBuilder = forwardRef<
   Types.SuperDocTemplateBuilderHandle,
   Types.SuperDocTemplateBuilderProps
@@ -43,15 +94,23 @@ const SuperDocTemplateBuilder = forwardRef<
   const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState<DOMRect | undefined>();
+  const [menuQuery, setMenuQuery] = useState<string>("");
+  const [menuFilteredFields, setMenuFilteredFields] = useState<
+    Types.FieldDefinition[]
+  >(() => fields.available || []);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const superdocRef = useRef<SuperDoc | null>(null);
   const triggerCleanupRef = useRef<(() => void) | null>(null);
   const fieldsRef = useRef(fields);
   fieldsRef.current = fields;
-  const templateFieldsRef = useRef<Types.TemplateField[]>(
-    fields.initial || [],
-  );
+
+  const menuTriggerFromRef = useRef<number | null>(null);
+  const menuVisibleRef = useRef(menuVisible);
+  useEffect(() => {
+    menuVisibleRef.current = menuVisible;
+  }, [menuVisible]);
+  const templateFieldsRef = useRef<Types.TemplateField[]>(fields.initial || []);
 
   useEffect(() => {
     templateFieldsRef.current = templateFields;
@@ -59,11 +118,36 @@ const SuperDocTemplateBuilder = forwardRef<
 
   const trigger = menu.trigger || "{{";
 
+  const availableFields = fieldsRef.current.available || [];
+
+  const computeFilteredFields = useCallback(
+    (query: string) => {
+      const normalized = query.trim().toLowerCase();
+      if (!normalized) return availableFields;
+
+      return availableFields.filter((field) => {
+        const label = field.label.toLowerCase();
+        const category = field.category?.toLowerCase() || "";
+        return label.includes(normalized) || category.includes(normalized);
+      });
+    },
+    [availableFields],
+  );
+
+  const updateMenuFilter = useCallback(
+    (query: string) => {
+      setMenuQuery(query);
+      setMenuFilteredFields(computeFilteredFields(query));
+    },
+    [computeFilteredFields],
+  );
+
+  const resetMenuFilter = useCallback(() => {
+    updateMenuFilter("");
+  }, [updateMenuFilter]);
+
   const focusField = useCallback(
-    (
-      fieldId: string,
-      options?: { field?: Types.TemplateField | null },
-    ) => {
+    (fieldId: string, options?: { field?: Types.TemplateField | null }) => {
       if (!fieldId) return;
 
       const editor = superdocRef.current?.activeEditor;
@@ -95,25 +179,25 @@ const SuperDocTemplateBuilder = forwardRef<
       const success =
         mode === "inline"
           ? editor.commands.insertStructuredContentInline?.({
-            attrs: {
-              id: fieldId,
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          })
+              attrs: {
+                id: fieldId,
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            })
           : editor.commands.insertStructuredContentBlock?.({
-            attrs: {
-              id: fieldId,
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          });
+              attrs: {
+                id: fieldId,
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            });
 
       if (success) {
         const newField: Types.TemplateField = {
@@ -167,26 +251,78 @@ const SuperDocTemplateBuilder = forwardRef<
 
   const deleteField = useCallback(
     (id: string): boolean => {
-      if (!superdocRef.current?.activeEditor) return false;
+      const editor = superdocRef.current?.activeEditor;
 
-      const editor = superdocRef.current.activeEditor;
-      const success = editor.commands.deleteStructuredContentById?.(id);
+      if (!editor) {
+        console.warn(
+          "[SuperDocTemplateBuilder] deleteField called without active editor",
+        );
 
-      if (success) {
+        let removed = false;
         setTemplateFields((prev) => {
-          const updated = prev.filter((f) => f.id !== id);
+          if (!prev.some((field) => field.id === id)) return prev;
+
+          const updated = prev.filter((field) => field.id !== id);
+          removed = true;
           onFieldsChange?.(updated);
           templateFieldsRef.current = updated;
           return updated;
         });
+
+        if (removed) {
+          onFieldDelete?.(id);
+          setSelectedFieldId((current) => (current === id ? null : current));
+        }
+
+        return removed;
+      }
+
+      let commandResult = false;
+      try {
+        commandResult =
+          editor.commands.deleteStructuredContentById?.(id) ?? false;
+      } catch (error) {
+        console.error(
+          "[SuperDocTemplateBuilder] Delete command failed:",
+          error,
+        );
+      }
+
+      let documentFields = getTemplateFieldsFromEditor(editor);
+      const fieldStillPresent = documentFields.some((field) => field.id === id);
+
+      if (!commandResult && fieldStillPresent) {
+        documentFields = documentFields.filter((field) => field.id !== id);
+      }
+
+      let removedFromState = false;
+
+      setTemplateFields((prev) => {
+        if (areTemplateFieldsEqual(prev, documentFields)) {
+          return prev;
+        }
+
+        const prevHadField = prev.some((field) => field.id === id);
+        const nextHasField = documentFields.some((field) => field.id === id);
+
+        if (prevHadField && !nextHasField) {
+          removedFromState = true;
+        }
+
+        onFieldsChange?.(documentFields);
+        return documentFields;
+      });
+
+      if (removedFromState) {
         onFieldDelete?.(id);
+        setSelectedFieldId((current) => (current === id ? null : current));
         if (selectedFieldId === id) {
           setSelectedFieldId(null);
           onFieldSelect?.(null);
         }
       }
 
-      return success;
+      return commandResult || removedFromState;
     },
     [onFieldDelete, onFieldSelect, onFieldsChange, selectedFieldId],
   );
@@ -202,22 +338,17 @@ const SuperDocTemplateBuilder = forwardRef<
     (editor: Editor) => {
       if (!editor) return;
 
-      const tags =
-        editor.helpers.structuredContentCommands.getStructuredContentTags(
-          editor.state,
-        );
+      const discovered = getTemplateFieldsFromEditor(editor);
 
-      const discovered: Types.TemplateField[] = tags
-        .map(({ node }: any) => ({
-          id: node.attrs.id,
-          alias: node.attrs.alias || node.attrs.label || "",
-          tag: node.attrs.tag,
-        }))
-        .filter((f: Types.TemplateField) => f.id);
+      setTemplateFields((prev) => {
+        if (areTemplateFieldsEqual(prev, discovered)) {
+          return prev;
+        }
 
-      setTemplateFields(discovered);
-      templateFieldsRef.current = discovered;
-      onFieldsChange?.(discovered);
+        templateFieldsRef.current = discovered;
+        onFieldsChange?.(discovered);
+        return discovered;
+      });
     },
     [onFieldsChange],
   );
@@ -243,27 +374,63 @@ const SuperDocTemplateBuilder = forwardRef<
               const { from } = state.selection;
 
               if (from >= trigger.length) {
-                const text = state.doc.textBetween(from - trigger.length, from);
+                const triggerStart = from - trigger.length;
+                const text = state.doc.textBetween(triggerStart, from);
+
                 if (text === trigger) {
                   const coords = e.view.coordsAtPos(from);
                   const bounds = new DOMRect(coords.left, coords.top, 0, 0);
 
                   const cleanup = () => {
-                    const tr = e.state.tr.delete(from - trigger.length, from);
-                    e.view.dispatch(tr);
+                    const editor = superdocRef.current?.activeEditor;
+                    if (!editor) return;
+                    const currentPos = editor.state.selection.from;
+                    const tr = editor.state.tr.delete(triggerStart, currentPos);
+                    editor.view.dispatch(tr);
                   };
 
                   triggerCleanupRef.current = cleanup;
+                  menuTriggerFromRef.current = from;
                   setMenuPosition(bounds);
                   setMenuVisible(true);
+                  resetMenuFilter();
 
                   onTrigger?.({
-                    position: { from: from - trigger.length, to: from },
+                    position: { from: triggerStart, to: from },
                     bounds,
                     cleanup,
                   });
+
+                  return;
                 }
               }
+
+              if (!menuVisibleRef.current) {
+                return;
+              }
+
+              if (menuTriggerFromRef.current == null) {
+                setMenuVisible(false);
+                resetMenuFilter();
+                return;
+              }
+
+              if (from < menuTriggerFromRef.current) {
+                setMenuVisible(false);
+                menuTriggerFromRef.current = null;
+                resetMenuFilter();
+                return;
+              }
+
+              const queryText = state.doc.textBetween(
+                menuTriggerFromRef.current,
+                from,
+              );
+              updateMenuFilter(queryText);
+
+              const coords = e.view.coordsAtPos(from);
+              const bounds = new DOMRect(coords.left, coords.top, 0, 0);
+              setMenuPosition(bounds);
             });
 
             // Track field changes
@@ -306,6 +473,8 @@ const SuperDocTemplateBuilder = forwardRef<
         triggerCleanupRef.current();
         triggerCleanupRef.current = null;
       }
+      menuTriggerFromRef.current = null;
+      resetMenuFilter();
 
       if (field.id.startsWith("custom_") && onFieldCreate) {
         try {
@@ -334,16 +503,18 @@ const SuperDocTemplateBuilder = forwardRef<
       });
       setMenuVisible(false);
     },
-    [insertFieldInternal, onFieldCreate],
+    [insertFieldInternal, onFieldCreate, resetMenuFilter],
   );
 
   const handleMenuClose = useCallback(() => {
     setMenuVisible(false);
+    menuTriggerFromRef.current = null;
+    resetMenuFilter();
     if (triggerCleanupRef.current) {
       triggerCleanupRef.current();
       triggerCleanupRef.current = null;
     }
-  }, []);
+  }, [resetMenuFilter]);
 
   // Navigation methods
   const nextField = useCallback(() => {
@@ -447,6 +618,8 @@ const SuperDocTemplateBuilder = forwardRef<
         isVisible={menuVisible}
         position={menuPosition}
         availableFields={fields.available || []}
+        filteredFields={menuFilteredFields}
+        filterQuery={menuQuery}
         allowCreate={fields.allowCreate || false}
         onSelect={handleMenuSelect}
         onClose={handleMenuClose}

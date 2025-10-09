@@ -1,19 +1,19 @@
-import React, { useState, useRef, useCallback, useMemo } from 'react';
-import SuperDocTemplateBuilder from '@superdoc-dev/template-builder';
+import React, { useState, useRef, useCallback, useMemo } from "react";
+import SuperDocTemplateBuilder from "@superdoc-dev/template-builder";
 import type {
   SuperDocTemplateBuilderHandle,
   TemplateField,
-  FieldDefinition
-} from '@superdoc-dev/template-builder';
-import 'superdoc/dist/style.css';
-import './App.css';
+  FieldDefinition,
+} from "@superdoc-dev/template-builder";
+import "superdoc/dist/style.css";
+import "./App.css";
 
 const availableFields: FieldDefinition[] = [
   // Contact Information
-  { id: 'customer_name', label: 'Customer Name', category: 'Contact' },
-  { id: 'customer_email', label: 'Customer Email', category: 'Contact' },
-  { id: 'customer_phone', label: 'Customer Phone', category: 'Contact' },
-  { id: 'customer_address', label: 'Customer Address', category: 'Contact' },
+  { id: "customer_name", label: "Customer Name", category: "Contact" },
+  { id: "customer_email", label: "Customer Email", category: "Contact" },
+  { id: "customer_phone", label: "Customer Phone", category: "Contact" },
+  { id: "customer_address", label: "Customer Address", category: "Contact" },
 
   // Company Information
   { id: 'company_name', label: 'Company Name', category: 'Company' },
@@ -45,8 +45,7 @@ const availableFields: FieldDefinition[] = [
 export function App() {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [events, setEvents] = useState<string[]>([]);
-  const [showExport, setShowExport] = useState(false);
-  const [exportData, setExportData] = useState<any>(null);
+  const [isDownloading, setIsDownloading] = useState(false);
   const builderRef = useRef<SuperDocTemplateBuilderHandle>(null);
 
   const log = useCallback((msg: string) => {
@@ -82,11 +81,25 @@ export function App() {
     log('⌨ Trigger detected');
   }, [log]);
 
-  const handleExportTemplate = useCallback(() => {
-    const data = builderRef.current?.exportTemplate();
-    setExportData(data);
-    setShowExport(true);
-    log('📤 Template exported');
+  const handleExportTemplate = useCallback(async () => {
+    if (!builderRef.current) {
+      return;
+    }
+
+    try {
+      setIsDownloading(true);
+
+      await builderRef.current.exportTemplate({
+        fileName: "template.docx",
+      });
+
+      log("📤 Template exported");
+    } catch (error) {
+      log("⚠️ Export failed");
+      console.error("Failed to export template", error);
+    } finally {
+      setIsDownloading(false);
+    }
   }, [log]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -147,8 +160,12 @@ export function App() {
             <span className="hint">Tab/Shift+Tab to navigate</span>
           </div>
           <div className="toolbar-right">
-            <button onClick={handleExportTemplate} className="export-button">
-              Export Template
+            <button
+              onClick={handleExportTemplate}
+              className="export-button"
+              disabled={isDownloading}
+            >
+              {isDownloading ? "Exporting..." : "Export Template"}
             </button>
           </div>
         </div>
@@ -177,27 +194,6 @@ export function App() {
           </div>
         )}
 
-        {/* Export Modal */}
-        {showExport && (
-          <div className="modal-overlay" onClick={() => setShowExport(false)}>
-            <div className="modal" onClick={e => e.stopPropagation()}>
-              <h2>Exported Template</h2>
-              <div className="export-content">
-                <h3>Fields ({exportData?.fields?.length || 0})</h3>
-                <pre>{JSON.stringify(exportData?.fields || [], null, 2)}</pre>
-                {exportData?.document && (
-                  <>
-                    <h3>Document Structure</h3>
-                    <pre>{JSON.stringify(exportData.document, null, 2).substring(0, 500)}...</pre>
-                  </>
-                )}
-              </div>
-              <button onClick={() => setShowExport(false)} className="modal-close">
-                Close
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
