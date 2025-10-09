@@ -224,14 +224,11 @@ describe("SuperDocTemplateBuilder component", () => {
     await waitForBuilderReady();
     await waitFor(() => expect(ref.current).toBeTruthy());
 
-    const exportData = ref.current?.exportTemplate();
+    await ref.current?.exportTemplate({ fileName: "export.docx" });
 
-    expect(exportData).toMatchObject({
-      fields: [
-        { id: "field1", alias: "Field 1", tag: "contact" },
-        { id: "field2", alias: "Field 2", tag: "invoice" },
-      ],
-      document: expect.any(Object),
+    expect(superDocMock.mockExport).toHaveBeenCalledWith({
+      exportType: ["docx"],
+      exportedName: "export.docx",
     });
   });
 

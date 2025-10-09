@@ -123,7 +123,7 @@ ref.current.previousField();  // Shift+Tab behavior
 
 // Get data
 const fields = ref.current.getFields();
-const template = ref.current.exportTemplate();
+const template = await ref.current.exportTemplate();
 ```
 
 ## Custom Components
@@ -201,15 +201,8 @@ function TemplateEditor() {
 Get the complete template data for saving:
 
 ```jsx
-const handleSave = () => {
-  const data = ref.current?.exportTemplate();
-  
-  // Save to backend
-  await api.saveTemplate({
-    name: 'Invoice Template',
-    fields: data.fields,
-    document: data.document
-  });
+const handleSave = async () => {
+  await ref.current?.exportTemplate({ fileName: 'invoice.docx' });
 };
 ```
 

@@ -66,25 +66,25 @@ const SuperDocTemplateBuilder = forwardRef<
       const success =
         mode === "inline"
           ? editor.commands.insertStructuredContentInline?.({
-            attrs: {
-              id: fieldId,
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          })
+              attrs: {
+                id: fieldId,
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            })
           : editor.commands.insertStructuredContentBlock?.({
-            attrs: {
-              id: fieldId,
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          });
+              attrs: {
+                id: fieldId,
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            });
 
       if (success) {
         const newField: Types.TemplateField = {
@@ -339,12 +339,31 @@ const SuperDocTemplateBuilder = forwardRef<
     selectField(templateFields[prevIndex].id);
   }, [templateFields, selectedFieldId, selectField]);
 
-  const exportTemplate = useCallback(() => {
-    return {
-      fields: templateFields,
-      document: superdocRef.current?.activeEditor?.exportDocx(),
-    };
-  }, [templateFields]);
+  const exportTemplate = useCallback(
+    async (options?: { fileName?: string }): Promise<void> => {
+      try {
+        const documentBlob = await superdocRef.current?.export({
+          exportType: ["docx"],
+          exportedName: options?.fileName || "document.docx",
+        });
+
+        if (!documentBlob) return;
+
+        const blobUrl = URL.createObjectURL(documentBlob as Blob);
+        const link = globalThis.document.createElement("a");
+        link.href = blobUrl;
+        link.download = options?.fileName || "document.docx";
+        globalThis.document.body.appendChild(link);
+        link.click();
+        globalThis.document.body.removeChild(link);
+        URL.revokeObjectURL(blobUrl);
+      } catch (error) {
+        console.error("Failed to export DOCX", error);
+        throw error;
+      }
+    },
+    [],
+  );
 
   // Imperative handle
   useImperativeHandle(ref, () => ({

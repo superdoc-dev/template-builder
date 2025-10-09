@@ -7,6 +7,7 @@ const mockUpdateStructuredContentById = vi.fn();
 const mockDeleteStructuredContentById = vi.fn();
 const mockSelectStructuredContentById = vi.fn();
 const mockDestroy = vi.fn();
+const mockExportDocx = vi.fn(async () => new Blob());
 
 const mockEditor = {
   commands: {
@@ -37,6 +38,7 @@ const mockEditor = {
     dispatch: vi.fn(),
     coordsAtPos: vi.fn(() => ({ left: 0, top: 0 })),
   },
+  exportDocx: mockExportDocx,
   on: vi.fn(),
 };
 
@@ -48,6 +50,7 @@ const SuperDocMock = vi.fn((options: any = {}) => {
   return {
     destroy: mockDestroy,
     activeEditor: mockEditor,
+    exportDocx: mockExportDocx,
     on: vi.fn((event: string, handler: (data?: any) => void) => {
       if (event === "editorCreate") {
         queueMicrotask(() => handler({ editor: mockEditor }));
@@ -70,6 +73,7 @@ const SuperDocMock = vi.fn((options: any = {}) => {
 (SuperDocMock as any).mockSelectStructuredContentById =
   mockSelectStructuredContentById;
 (SuperDocMock as any).mockDestroy = mockDestroy;
+(SuperDocMock as any).mockExportDocx = mockExportDocx;
 
 vi.mock("superdoc", () => ({
   SuperDoc: SuperDocMock,

@@ -28,7 +28,9 @@ export interface FieldMenuProps {
   allowCreate?: boolean;
   onSelect: (field: FieldDefinition) => void;
   onClose: () => void;
-  onCreateField?: (field: FieldDefinition) => void | Promise<FieldDefinition | void>;
+  onCreateField?: (
+    field: FieldDefinition,
+  ) => void | Promise<FieldDefinition | void>;
 }
 
 export interface FieldListProps {
@@ -73,7 +75,9 @@ export interface SuperDocTemplateBuilderProps {
   onFieldDelete?: (fieldId: string) => void;
   onFieldsChange?: (fields: TemplateField[]) => void;
   onFieldSelect?: (field: TemplateField | null) => void;
-  onFieldCreate?: (field: FieldDefinition) => void | Promise<FieldDefinition | void>;
+  onFieldCreate?: (
+    field: FieldDefinition,
+  ) => void | Promise<FieldDefinition | void>;
 
   // UI
   className?: string;
@@ -92,5 +96,5 @@ export interface SuperDocTemplateBuilderHandle {
   nextField: () => void;
   previousField: () => void;
   getFields: () => TemplateField[];
-  exportTemplate: () => { fields: TemplateField[]; document?: any };
+  exportTemplate: (options?: { fileName?: string }) => Promise<void>;
 }
