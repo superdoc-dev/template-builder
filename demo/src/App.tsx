@@ -83,6 +83,7 @@ export function App() {
 
   const handleExportTemplate = useCallback(async () => {
     if (!builderRef.current) {
+      log("⚠️ Export failed (no builder instance)");
       return;
     }
 
@@ -176,6 +177,9 @@ export function App() {
           fields={fieldsConfig}
           list={listConfig}
           toolbar={true}
+          onError={(error, operation) => {
+            log(`⚠️ ${operation} error: ${error.message}`);
+          }}
           onReady={handleReady}
           onTrigger={handleTrigger}
           onFieldInsert={handleFieldInsert}

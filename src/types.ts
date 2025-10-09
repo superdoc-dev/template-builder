@@ -93,6 +93,7 @@ export interface SuperDocTemplateBuilderProps {
   onFieldCreate?: (
     field: FieldDefinition,
   ) => void | Promise<FieldDefinition | void>;
+  onError?: (error: Error, operation: string) => void;
 
   // UI
   className?: string;

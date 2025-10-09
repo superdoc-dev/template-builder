@@ -115,6 +115,7 @@ const SuperDocTemplateBuilder = forwardRef<
     onFieldsChange,
     onFieldSelect,
     onFieldCreate,
+    onError,
     className,
     style,
     documentHeight = "600px",
@@ -146,6 +147,36 @@ const SuperDocTemplateBuilder = forwardRef<
   const trigger = menu.trigger || "{{";
 
   const availableFields = fieldsRef.current.available || [];
+
+  const reportError = useCallback(
+    (
+      error: unknown,
+      operation: string,
+      level: "error" | "warn" = "error",
+    ) => {
+      const normalized =
+        error instanceof Error
+          ? error
+          : new Error(typeof error === "string" ? error : String(error));
+
+      if (onError) {
+        onError(normalized, operation);
+      } else if (level === "error") {
+        console.error(
+          `[SuperDocTemplateBuilder] ${operation} error:`,
+          normalized,
+        );
+      } else {
+        console.warn(
+          `[SuperDocTemplateBuilder] ${operation} warning:`,
+          normalized,
+        );
+      }
+
+      return normalized;
+    },
+    [onError],
+  );
 
   const computeFilteredFields = useCallback(
     (query: string) => {
@@ -276,23 +307,29 @@ const SuperDocTemplateBuilder = forwardRef<
         if (removed) {
           onFieldDelete?.(id);
           setSelectedFieldId((current) => (current === id ? null : current));
+          return true;
         }
 
-        return removed;
+        reportError(
+          new Error(`Failed to delete field without active editor: ${id}`),
+          "deleteField",
+          "warn",
+        );
+
+        return false;
       }
 
       let commandResult = false;
+
       try {
         commandResult =
           editor.commands.deleteStructuredContentById?.(id) ?? false;
       } catch (error) {
-        console.error(
-          "[SuperDocTemplateBuilder] Delete command failed:",
-          error,
-        );
+        throw reportError(error, "deleteField");
       }
 
       let documentFields = getTemplateFieldsFromEditor(editor);
+
       const fieldStillPresent = documentFields.some((field) => field.id === id);
 
       if (!commandResult && fieldStillPresent) {
@@ -322,9 +359,19 @@ const SuperDocTemplateBuilder = forwardRef<
         setSelectedFieldId((current) => (current === id ? null : current));
       }
 
-      return commandResult || removedFromState;
+      const success = commandResult || removedFromState;
+
+      if (!success) {
+        reportError(
+          new Error(`Failed to delete field: ${id}`),
+          "deleteField",
+          "warn",
+        );
+      }
+
+      return success;
     },
-    [onFieldDelete, onFieldsChange],
+    [onFieldDelete, onFieldsChange, reportError],
   );
 
   const selectField = useCallback(
@@ -363,15 +410,22 @@ const SuperDocTemplateBuilder = forwardRef<
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const initSuperDoc = async () => {
-      const { SuperDoc } = await import("superdoc");
+    let cancelled = false;
 
-      const config: Record<string, unknown> = {
-        selector: containerRef.current!,
-        document: document?.source,
-        documentMode: document?.mode || "editing",
-        onReady: () => {
-          if (instance.activeEditor) {
+    const initSuperDoc = async () => {
+      try {
+        const { SuperDoc } = await import("superdoc");
+
+        const config: Record<string, unknown> = {
+          selector: containerRef.current!,
+          document: document?.source,
+          documentMode: document?.mode || "editing",
+          onReady: () => {
+            if (!instance.activeEditor) {
+              onReady?.();
+              return;
+            }
+
             const editor = instance.activeEditor;
 
             // Setup trigger detection
@@ -445,33 +499,44 @@ const SuperDocTemplateBuilder = forwardRef<
             });
 
             discoverFields(editor);
-          }
 
-          onReady?.();
-        },
-      };
-
-      const instance = new SuperDoc({
-        ...config,
-        ...(toolbarSettings && {
-          toolbar: toolbarSettings.selector,
-          modules: {
-            toolbar: {
-              selector: toolbarSettings.selector,
-              toolbarGroups: toolbarSettings.config.toolbarGroups || ["center"],
-              excludeItems: toolbarSettings.config.excludeItems || [],
-              ...toolbarSettings.config,
-            },
+            onReady?.();
           },
-        }),
-      });
+        };
 
-      superdocRef.current = instance;
+        const instance = new SuperDoc({
+          ...config,
+          ...(toolbarSettings && {
+            toolbar: toolbarSettings.selector,
+            modules: {
+              toolbar: {
+                selector: toolbarSettings.selector,
+                toolbarGroups:
+                  toolbarSettings.config.toolbarGroups || ["center"],
+                excludeItems: toolbarSettings.config.excludeItems || [],
+                ...toolbarSettings.config,
+              },
+            },
+          }),
+        });
+
+        if (cancelled) {
+          if (typeof instance.destroy === "function") {
+            instance.destroy();
+          }
+          return;
+        }
+
+        superdocRef.current = instance;
+      } catch (error) {
+        reportError(error, "initSuperDoc");
+      }
     };
 
     initSuperDoc();
 
     return () => {
+      cancelled = true;
       if (superdocRef.current) {
         if (typeof superdocRef.current.destroy === "function") {
           superdocRef.current.destroy();
@@ -487,6 +552,7 @@ const SuperDocTemplateBuilder = forwardRef<
     onReady,
     onTrigger,
     toolbar,
+    reportError,
   ]);
 
   const handleMenuSelect = useCallback(
@@ -513,7 +579,7 @@ const SuperDocTemplateBuilder = forwardRef<
             return;
           }
         } catch (error) {
-          console.error("Field creation failed:", error);
+          reportError(error, "onFieldCreate", "warn");
         }
       }
 
@@ -525,7 +591,7 @@ const SuperDocTemplateBuilder = forwardRef<
       });
       setMenuVisible(false);
     },
-    [insertFieldInternal, onFieldCreate, resetMenuFilter],
+    [insertFieldInternal, onFieldCreate, reportError, resetMenuFilter],
   );
 
   const handleMenuClose = useCallback(() => {
@@ -565,18 +631,26 @@ const SuperDocTemplateBuilder = forwardRef<
 
   const exportTemplate = useCallback(
     async (options?: { fileName?: string }): Promise<void> => {
+      if (!superdocRef.current) {
+        throw reportError(
+          new Error("Cannot export template without SuperDoc instance"),
+          "exportTemplate",
+        );
+      }
 
-      try {
-        await superdocRef.current?.export({
-          exportType: ["docx"],
-          exportedName: options?.fileName ? options?.fileName : "document"
-        });
-      } catch (error) {
-        console.error("Failed to export DOCX", error);
-        throw error;
+      const result = await superdocRef.current.export({
+        exportType: ["docx"],
+        exportedName: options?.fileName ? options?.fileName : "document",
+      });
+
+      if (!result) {
+        throw reportError(
+          new Error("Export failed: no data returned"),
+          "exportTemplate",
+        );
       }
     },
-    [],
+    [reportError],
   );
 
   // Imperative handle
