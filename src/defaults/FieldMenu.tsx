@@ -62,40 +62,6 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
 
   return (
     <div className="superdoc-field-menu" style={menuStyle}>
-      {availableFields.map((field) => (
-        <div
-          key={field.id}
-          className="field-menu-item"
-          onClick={() => onSelect(field)}
-          style={{
-            padding: "8px 16px",
-            cursor: "pointer",
-          }}
-        >
-          <span style={{ fontWeight: 500 }}>{field.label}</span>
-          {field.category && (
-            <span
-              style={{
-                fontSize: "0.85em",
-                color: "#666",
-                marginLeft: "8px",
-              }}
-            >
-              {field.category}
-            </span>
-          )}
-        </div>
-      ))}
-
-      {allowCreate && availableFields.length > 0 && (
-        <div
-          style={{
-            borderTop: "1px solid #eee",
-            margin: "4px 0",
-          }}
-        />
-      )}
-
       {allowCreate && !isCreating && (
         <div
           className="field-menu-item"
@@ -172,6 +138,40 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
           </div>
         </div>
       )}
+
+      {allowCreate && availableFields.length > 0 && (
+        <div
+          style={{
+            borderTop: "1px solid #eee",
+            margin: "4px 0",
+          }}
+        />
+      )}
+
+      {availableFields.map((field) => (
+        <div
+          key={field.id}
+          className="field-menu-item"
+          onClick={() => onSelect(field)}
+          style={{
+            padding: "8px 16px",
+            cursor: "pointer",
+          }}
+        >
+          <span style={{ fontWeight: 500 }}>{field.label}</span>
+          {field.category && (
+            <span
+              style={{
+                fontSize: "0.85em",
+                color: "#666",
+                marginLeft: "8px",
+              }}
+            >
+              {field.category}
+            </span>
+          )}
+        </div>
+      ))}
 
       <div
         style={{
