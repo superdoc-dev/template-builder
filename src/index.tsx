@@ -366,7 +366,7 @@ const SuperDocTemplateBuilder = forwardRef<
                   };
 
                   triggerCleanupRef.current = cleanup;
-                  menuTriggerFromRef.current = triggerStart;
+                  menuTriggerFromRef.current = from;
                   setMenuPosition(bounds);
                   setMenuVisible(true);
                   resetMenuFilter();

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FieldDefinition, FieldMenuProps } from "../types";
 
 export const FieldMenu: React.FC<FieldMenuProps> = ({
@@ -37,11 +37,61 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
     };
   }, [position]);
 
-  if (!isVisible) return null;
-
-  const visibleFields = filteredFields ?? availableFields;
+  const fieldsToDisplay = filteredFields ?? availableFields;
   const hasFilter = Boolean(filterQuery);
-  const hasVisibleFields = visibleFields.length > 0;
+
+  const groupedFields = useMemo(() => {
+    const groups: { category: string; fields: FieldDefinition[] }[] = [];
+    const categoryIndex = new Map<string, number>();
+
+    fieldsToDisplay.forEach((field) => {
+      const categoryName = field.category?.trim() || "Uncategorized";
+      const existingIndex = categoryIndex.get(categoryName);
+
+      if (existingIndex !== undefined) {
+        groups[existingIndex].fields.push(field);
+        return;
+      }
+
+      categoryIndex.set(categoryName, groups.length);
+      groups.push({ category: categoryName, fields: [field] });
+    });
+
+    return groups;
+  }, [fieldsToDisplay]);
+
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setExpandedCategories((previous) => {
+      if (groupedFields.length === 0) {
+        return Object.keys(previous).length === 0 ? previous : {};
+      }
+
+      const next: Record<string, boolean> = {};
+      let hasChanges = Object.keys(previous).length !== groupedFields.length;
+
+      groupedFields.forEach(({ category }, index) => {
+        // Auto-expand all categories when filtering is active
+        const target = hasFilter ? true : (previous[category] ?? index === 0);
+        next[category] = target;
+        if (!hasChanges && previous[category] !== target) {
+          hasChanges = true;
+        }
+      });
+
+      return hasChanges ? next : previous;
+    });
+  }, [groupedFields, hasFilter]);
+
+  const toggleCategory = useCallback((category: string) => {
+    setExpandedCategories((previous) => ({
+      ...previous,
+      [category]: !previous[category],
+    }));
+  }, []);
+
+  if (!isVisible) return null;
 
   const handleCreateField = async () => {
     const trimmedName = newFieldName.trim();
@@ -68,24 +118,15 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
 
   return (
     <div className="superdoc-field-menu" style={menuStyle}>
-      <div
-        style={{
-          padding: "0 16px 8px 16px",
-          borderBottom: "1px solid #f3f4f6",
-          marginBottom: "8px",
-        }}
-      >
+      {hasFilter && (
         <div
           style={{
-            fontSize: "12px",
-            color: "#6b7280",
-            textTransform: "uppercase",
+            padding: "8px 16px",
+            borderBottom: "1px solid #f0f0f0",
+            marginBottom: "4px",
           }}
         >
-          Insert Field
-        </div>
-        {hasFilter && (
-          <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "4px" }}>
+          <div style={{ fontSize: "12px", color: "#6b7280" }}>
             Filtering results for
             <span
               style={{ fontWeight: 600, color: "#111827", marginLeft: "4px" }}
@@ -93,44 +134,6 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
               {filterQuery}
             </span>
           </div>
-        )}
-      </div>
-
-      {hasVisibleFields ? (
-        visibleFields.map((field) => (
-          <div
-            key={field.id}
-            className="field-menu-item"
-            onClick={() => onSelect(field)}
-            style={{
-              padding: "8px 16px",
-              cursor: "pointer",
-            }}
-          >
-            <span style={{ fontWeight: 500 }}>{field.label}</span>
-            {field.category && (
-              <span
-                style={{
-                  fontSize: "0.85em",
-                  color: "#666",
-                  marginLeft: "8px",
-                }}
-              >
-                {field.category}
-              </span>
-            )}
-          </div>
-        ))
-      ) : (
-        <div
-          style={{
-            padding: "16px",
-            fontSize: "13px",
-            color: "#6b7280",
-            textAlign: "center",
-          }}
-        >
-          No matching fields
         </div>
       )}
 
@@ -210,6 +213,105 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
           </div>
         </div>
       )}
+
+      {allowCreate && availableFields.length > 0 && (
+        <div
+          style={{
+            borderTop: "1px solid #eee",
+            margin: "4px 0",
+          }}
+        />
+      )}
+
+      {groupedFields.length === 0 ? (
+        <div
+          style={{
+            padding: "16px",
+            fontSize: "13px",
+            color: "#6b7280",
+            textAlign: "center",
+          }}
+        >
+          No matching fields
+        </div>
+      ) : (
+        groupedFields.map(({ category, fields }, index) => {
+          const isExpanded = Boolean(expandedCategories[category]);
+          const itemsMaxHeight = `${Math.max(fields.length * 40, 0)}px`;
+
+          return (
+            <div
+              key={category}
+              style={{
+                borderTop: index === 0 && allowCreate ? undefined : "1px solid #f0f0f0",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => toggleCategory(category)}
+                style={{
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  padding: "8px 16px",
+                  background: "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                  fontWeight: 500,
+                  textAlign: "left",
+                }}
+              >
+                <span>
+                  {category} ({fields.length})
+                </span>
+                <span
+                  aria-hidden
+                  style={{
+                    display: "inline-block",
+                    width: "8px",
+                    height: "8px",
+                    borderRight: "2px solid #666",
+                    borderBottom: "2px solid #666",
+                    transform: isExpanded ? "rotate(45deg)" : "rotate(-45deg)",
+                    transition: "transform 0.2s ease",
+                    marginLeft: "12px",
+                  }}
+                />
+              </button>
+              <div
+                data-category={category}
+                aria-hidden={!isExpanded}
+                style={{
+                  overflow: "hidden",
+                  maxHeight: isExpanded ? itemsMaxHeight : "0px",
+                  opacity: isExpanded ? 1 : 0,
+                  transition: "max-height 0.2s ease, opacity 0.2s ease",
+                  pointerEvents: isExpanded ? "auto" : "none",
+                }}
+              >
+                <div style={{ padding: isExpanded ? "4px 0" : 0 }}>
+                  {fields.map((field) => (
+                    <div
+                      key={field.id}
+                      className="field-menu-item"
+                      onClick={() => onSelect(field)}
+                      style={{
+                        padding: "8px 16px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <span style={{ fontWeight: 500 }}>{field.label}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          );
+        }))}
 
       <div
         style={{
