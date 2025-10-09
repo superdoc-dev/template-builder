@@ -92,6 +92,8 @@ function TemplateEditor() {
     component: CustomFieldList      // Custom list component
   }}
   
+  showToolbar={true}               // Toggle SuperDoc toolbar visibility
+  
   // Event handlers
   onReady={() => {}}
   onTrigger={(event) => {}}

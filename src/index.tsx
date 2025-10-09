@@ -24,6 +24,7 @@ const SuperDocTemplateBuilder = forwardRef<
     fields = {},
     menu = {},
     list = {},
+    showToolbar = true,
     onReady,
     onTrigger,
     onFieldInsert,
@@ -45,6 +46,7 @@ const SuperDocTemplateBuilder = forwardRef<
   const [menuPosition, setMenuPosition] = useState<DOMRect | undefined>();
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const toolbarRef = useRef<HTMLDivElement>(null);
   const superdocRef = useRef<SuperDoc | null>(null);
   const triggerCleanupRef = useRef<(() => void) | null>(null);
   const fieldsRef = useRef(fields);
@@ -198,7 +200,9 @@ const SuperDocTemplateBuilder = forwardRef<
     const initSuperDoc = async () => {
       const { SuperDoc } = await import("superdoc");
 
-      const instance = new SuperDoc({
+      const toolbarElement = showToolbar ? toolbarRef.current ?? undefined : undefined;
+
+      const config: Record<string, unknown> = {
         selector: containerRef.current!,
         document: document?.source,
         documentMode: document?.mode || "editing",
@@ -245,6 +249,20 @@ const SuperDocTemplateBuilder = forwardRef<
 
           onReady?.();
         },
+      };
+
+      const instance = new SuperDoc({
+        ...config,
+        ...(toolbarElement
+          ? {
+              toolbar: toolbarElement,
+              modules: {
+                toolbar: {
+                  selector: toolbarElement,
+                },
+              },
+            }
+          : {}),
       });
 
       superdocRef.current = instance;
@@ -267,6 +285,7 @@ const SuperDocTemplateBuilder = forwardRef<
     discoverFields,
     onReady,
     onTrigger,
+    showToolbar,
   ]);
 
   const handleMenuSelect = useCallback(
@@ -383,6 +402,13 @@ const SuperDocTemplateBuilder = forwardRef<
 
         {/* Document */}
         <div className="superdoc-template-builder-document" style={{ flex: 1 }}>
+          {showToolbar && (
+            <div
+              ref={toolbarRef}
+              className="superdoc-template-builder-toolbar"
+              data-testid="template-builder-toolbar"
+            />
+          )}
           <div
             ref={containerRef}
             className="superdoc-template-builder-editor"

@@ -79,6 +79,7 @@ export interface SuperDocTemplateBuilderProps {
   className?: string;
   style?: React.CSSProperties;
   documentHeight?: string;
+  showToolbar?: boolean;
 }
 
 export interface SuperDocTemplateBuilderHandle {

@@ -57,6 +57,25 @@ describe("SuperDocTemplateBuilder component", () => {
     await waitForBuilderReady();
 
     expect(screen.getByTestId("template-builder-editor")).toBeInTheDocument();
+    expect(screen.getByTestId("template-builder-toolbar")).toBeInTheDocument();
+
+    const config = superDocMock.mock.calls[0]?.[0];
+    expect(config?.toolbar).toBeDefined();
+    expect(config?.modules?.toolbar?.selector).toBe(config?.toolbar);
+  });
+
+  it("hides toolbar when showToolbar is false", async () => {
+    renderComponent({ showToolbar: false });
+
+    await waitForBuilderReady();
+
+    expect(
+      screen.queryByTestId("template-builder-toolbar"),
+    ).not.toBeInTheDocument();
+
+    const config = superDocMock.mock.calls[0]?.[0];
+    expect(config?.toolbar).toBeUndefined();
+    expect(config?.modules).toBeUndefined();
   });
 
   it("detects trigger and shows field menu", async () => {
@@ -85,7 +104,7 @@ describe("SuperDocTemplateBuilder component", () => {
     });
 
     // Check that field menu is visible
-    expect(screen.getByText("Insert Field")).toBeInTheDocument();
+    expect(screen.getByText("Close")).toBeInTheDocument();
   });
 
   it("inserts fields using ref methods", async () => {
@@ -283,7 +302,7 @@ describe("SuperDocTemplateBuilder component", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Insert Field")).toBeInTheDocument();
+      expect(screen.getByText("Close")).toBeInTheDocument();
     });
 
     // Select a field from menu
