@@ -233,3 +233,51 @@ const ref = useRef<SuperDocTemplateBuilderHandle>(null);
 ## License
 
 MIT
+
+## Linear Two-way Agent (Dev Server)
+
+This repository includes a minimal development server to demo a two-way Linear agent integration. It exposes:
+
+- `POST /index` – stub endpoint to simulate indexing
+- `POST /agent/command` – accepts Linear agent command webhooks
+
+### Run the server
+
+```bash
+pnpm install
+pnpm run start:server
+```
+
+The server listens on `http://localhost:8000` by default. Optionally set a shared secret to validate Linear webhooks:
+
+```bash
+export LINEAR_WEBHOOK_SECRET=your_shared_secret
+pnpm run start:server
+```
+
+### Test commands
+
+Index the codebase (stub):
+
+```bash
+curl -X POST http://localhost:8000/index
+```
+
+Trigger a command (mock payload):
+
+```bash
+curl -X POST http://localhost:8000/agent/command \
+  -H "Content-Type: application/json" \
+  -d '{"issueId":"ISSUE-123","command":"rerun_analysis","sessionId":"existing-session"}'
+```
+
+You should see `AgentActivity` entries in the server logs for actions and responses.
+
+### Supported commands
+
+- `rerun_analysis` – increments rerun counter and emits activity
+- `search_code` – accepts a `query` field (stubbed)
+- `explain_context` – returns an explanation message
+- `suggest_implementation` – returns suggested steps
+
+The server performs basic per-issue rate limiting (5 commands/min) and preserves session continuity using the provided `sessionId` when present.
