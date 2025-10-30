@@ -10,24 +10,13 @@ import "./App.css";
 
 const availableFields: FieldDefinition[] = [
   // Contact Information
-  { id: "customer_name", label: "Customer Name", category: "Contact" },
-  { id: "customer_email", label: "Customer Email", category: "Contact" },
-  { id: "customer_phone", label: "Customer Phone", category: "Contact" },
-  { id: "customer_address", label: "Customer Address", category: "Contact" },
+  { id: "applicant_name", label: "Applicant Name", category: "Applicant" },
+  { id: "applicant_email", label: "Applicant Email", category: "Applicant" },
+  { id: "applicant_phone", label: "Applicant Phone", category: "Applicant" },
 
   // Company Information
-  { id: 'company_name', label: 'Company Name', category: 'Company' },
-  { id: 'company_address', label: 'Company Address', category: 'Company' },
-  { id: 'company_phone', label: 'Company Phone', category: 'Company' },
-  { id: 'company_email', label: 'Company Email', category: 'Company' },
-
-  // Invoice/Order
-  { id: 'invoice_number', label: 'Invoice Number', category: 'Invoice' },
-  { id: 'invoice_date', label: 'Invoice Date', category: 'Invoice' },
-  { id: 'due_date', label: 'Due Date', category: 'Invoice' },
-  { id: 'total_amount', label: 'Total Amount', category: 'Invoice' },
-  { id: 'tax_amount', label: 'Tax Amount', category: 'Invoice' },
-  { id: 'subtotal', label: 'Subtotal', category: 'Invoice' },
+  { id: 'organization_name', label: 'Organization Name', category: 'Organization' },
+  { id: 'organization_email', label: 'Organization Email', category: 'Organization' },
 
   // Legal
   { id: 'effective_date', label: 'Effective Date', category: 'Legal' },
@@ -36,10 +25,7 @@ const availableFields: FieldDefinition[] = [
   { id: 'governing_law', label: 'Governing Law', category: 'Legal' },
 
   // Product/Service
-  { id: 'product_name', label: 'Product Name', category: 'Product' },
-  { id: 'product_description', label: 'Product Description', category: 'Product' },
-  { id: 'quantity', label: 'Quantity', category: 'Product' },
-  { id: 'unit_price', label: 'Unit Price', category: 'Product' },
+  { id: 'service_description', label: 'Service Description', category: 'Product' },
 ];
 
 export function App() {

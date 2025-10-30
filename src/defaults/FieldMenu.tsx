@@ -60,7 +60,9 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
     return groups;
   }, [fieldsToDisplay]);
 
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+  const [expandedCategories, setExpandedCategories] = useState<
+    Record<string, boolean>
+  >({});
 
   useEffect(() => {
     setExpandedCategories((previous) => {
@@ -243,7 +245,8 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
             <div
               key={category}
               style={{
-                borderTop: index === 0 && allowCreate ? undefined : "1px solid #f0f0f0",
+                borderTop:
+                  index === 0 && allowCreate ? undefined : "1px solid #f0f0f0",
               }}
             >
               <button
@@ -311,7 +314,8 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
               </div>
             </div>
           );
-        }))}
+        })
+      )}
 
       <div
         style={{

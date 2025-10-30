@@ -39,6 +39,7 @@ export interface FieldListProps {
   fields: TemplateField[];
   onSelect: (field: TemplateField) => void;
   onDelete: (fieldId: string | number) => void;
+  onUpdate?: (field: TemplateField) => void;
   selectedFieldId?: string | number;
 }
 

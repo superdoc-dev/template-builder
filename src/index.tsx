@@ -15,11 +15,9 @@ export { FieldMenu, FieldList };
 
 type Editor = NonNullable<SuperDoc["activeEditor"]>;
 
-const getTemplateFieldsFromEditor = (
-  editor: Editor,
-): Types.TemplateField[] => {
-  const structuredContentHelpers =
-    (editor.helpers as any)?.structuredContentCommands;
+const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
+  const structuredContentHelpers = (editor.helpers as any)
+    ?.structuredContentCommands;
 
   if (!structuredContentHelpers?.getStructuredContentTags) {
     return [];
@@ -141,9 +139,9 @@ const SuperDocTemplateBuilder = forwardRef<
   const [templateFields, setTemplateFields] = useState<Types.TemplateField[]>(
     fields.initial || [],
   );
-  const [selectedFieldId, setSelectedFieldId] = useState<string | number | null>(
-    null,
-  );
+  const [selectedFieldId, setSelectedFieldId] = useState<
+    string | number | null
+  >(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState<DOMRect | undefined>();
   const [menuQuery, setMenuQuery] = useState<string>("");
@@ -207,23 +205,23 @@ const SuperDocTemplateBuilder = forwardRef<
       const success =
         mode === "inline"
           ? editor.commands.insertStructuredContentInline?.({
-            attrs: {
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          })
+              attrs: {
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            })
           : editor.commands.insertStructuredContentBlock?.({
-            attrs: {
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          });
+              attrs: {
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            });
 
       if (success) {
         const updatedFields = getTemplateFieldsFromEditor(editor);
@@ -591,11 +589,10 @@ const SuperDocTemplateBuilder = forwardRef<
 
   const exportTemplate = useCallback(
     async (options?: { fileName?: string }): Promise<void> => {
-
       try {
         await superdocRef.current?.export({
           exportType: ["docx"],
-          exportedName: options?.fileName ? options?.fileName : "document"
+          exportedName: options?.fileName ? options?.fileName : "document",
         });
       } catch (error) {
         console.error("Failed to export DOCX", error);
@@ -637,6 +634,7 @@ const SuperDocTemplateBuilder = forwardRef<
               fields={templateFields}
               onSelect={(field) => selectField(field.id)}
               onDelete={deleteField}
+              onUpdate={(field) => updateField(field.id, field)}
               selectedFieldId={selectedFieldId || undefined}
             />
           </div>
@@ -666,6 +664,7 @@ const SuperDocTemplateBuilder = forwardRef<
               fields={templateFields}
               onSelect={(field) => selectField(field.id)}
               onDelete={deleteField}
+              onUpdate={(field) => updateField(field.id, field)}
               selectedFieldId={selectedFieldId || undefined}
             />
           </div>
