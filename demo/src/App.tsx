@@ -9,23 +9,24 @@ import "superdoc/dist/style.css";
 import "./App.css";
 
 const availableFields: FieldDefinition[] = [
-  // Contact Information
-  { id: "applicant_name", label: "Applicant Name", category: "Applicant" },
-  { id: "applicant_email", label: "Applicant Email", category: "Applicant" },
-  { id: "applicant_phone", label: "Applicant Phone", category: "Applicant" },
+  // Agreement
+  { id: '1242142770', label: 'Agreement Date', category: 'Agreement' },
 
-  // Company Information
-  { id: 'organization_name', label: 'Organization Name', category: 'Organization' },
-  { id: 'organization_email', label: 'Organization Email', category: 'Organization' },
+  // Parties
+  { id: '1242142771', label: 'User Name', category: 'Parties' },
+  { id: '1242142772', label: 'Company Name', category: 'Parties' },
+
+  // Scope
+  { id: '1242142773', label: 'Service Type', category: 'Scope' },
 
   // Legal
-  { id: 'effective_date', label: 'Effective Date', category: 'Legal' },
-  { id: 'termination_date', label: 'Termination Date', category: 'Legal' },
-  { id: 'jurisdiction', label: 'Jurisdiction', category: 'Legal' },
-  { id: 'governing_law', label: 'Governing Law', category: 'Legal' },
+  { id: '1242142774', label: 'Agreement Jurisdiction', category: 'Legal' },
 
-  // Product/Service
-  { id: 'service_description', label: 'Service Description', category: 'Product' },
+  // Company Details
+  { id: '1242142775', label: 'Company Address', category: 'Company' },
+
+  // Signatures
+  { id: '1242142776', label: 'Signature', category: 'Signatures' },
 ];
 
 export function App() {
@@ -35,7 +36,7 @@ export function App() {
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [documentSource, setDocumentSource] = useState<string | File>(
-    "https://storage.googleapis.com/public_static_hosting/public_demo_docs/service_agreement.docx",
+    "https://storage.googleapis.com/public_static_hosting/public_demo_docs/new_service_agreement.docx",
   );
   const builderRef = useRef<SuperDocTemplateBuilderHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -56,7 +57,7 @@ export function App() {
     log(`✓ Inserted: ${field.alias}`);
   }, [log]);
 
-  const handleFieldDelete = useCallback((fieldId: string) => {
+  const handleFieldDelete = useCallback((fieldId: string | number) => {
     log(`✗ Deleted: ${fieldId}`);
   }, [log]);
 

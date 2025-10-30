@@ -24,9 +24,9 @@ function TemplateEditor() {
       
       fields={{
         available: [
-          { id: 'customer_name', label: 'Customer Name', category: 'Contact' },
-          { id: 'invoice_date', label: 'Invoice Date', category: 'Invoice' },
-          { id: 'amount', label: 'Amount', category: 'Invoice' }
+          { id: '1324567890', label: 'Customer Name', category: 'Contact' },
+          { id: '1324567891', label: 'Invoice Date', category: 'Invoice' },
+          { id: '1324567892', label: 'Amount', category: 'Invoice' }
         ]
       }}
       
@@ -47,8 +47,8 @@ function TemplateEditor() {
 ```javascript
 {
   fields: [
-    { id: "field_123", alias: "Customer Name", tag: "contact" },
-    { id: "field_124", alias: "Invoice Date", tag: "invoice" }
+    { id: "1324567890", alias: "Customer Name", tag: "contact" },
+    { id: "1324567891", alias: "Invoice Date", tag: "invoice" }
   ],
   document: { /* ProseMirror document JSON */ }
 }
