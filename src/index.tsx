@@ -161,7 +161,7 @@ const SuperDocTemplateBuilder = forwardRef<
     menuVisibleRef.current = menuVisible;
   }, [menuVisible]);
 
-  const trigger = menu.trigger || "{{";
+  const trigger = menu.trigger || "{{"; // Default trigger
 
   const availableFields = fieldsRef.current.available || [];
 
@@ -205,23 +205,23 @@ const SuperDocTemplateBuilder = forwardRef<
       const success =
         mode === "inline"
           ? editor.commands.insertStructuredContentInline?.({
-              attrs: {
-                alias: field.alias,
-                tag: field.metadata
-                  ? JSON.stringify(field.metadata)
-                  : field.category,
-              },
-              text: field.defaultValue || field.alias,
-            })
+            attrs: {
+              alias: field.alias,
+              tag: field.metadata
+                ? JSON.stringify(field.metadata)
+                : field.category,
+            },
+            text: field.defaultValue || field.alias,
+          })
           : editor.commands.insertStructuredContentBlock?.({
-              attrs: {
-                alias: field.alias,
-                tag: field.metadata
-                  ? JSON.stringify(field.metadata)
-                  : field.category,
-              },
-              text: field.defaultValue || field.alias,
-            });
+            attrs: {
+              alias: field.alias,
+              tag: field.metadata
+                ? JSON.stringify(field.metadata)
+                : field.category,
+            },
+            text: field.defaultValue || field.alias,
+          });
 
       if (success) {
         const updatedFields = getTemplateFieldsFromEditor(editor);
