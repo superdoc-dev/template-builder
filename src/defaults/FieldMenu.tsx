@@ -170,6 +170,7 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
               if (event.key === "Escape") {
                 setIsCreating(false);
                 setNewFieldName("");
+                setFieldMode("inline");
               }
             }}
             autoFocus
@@ -232,6 +233,7 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
               onClick={() => {
                 setIsCreating(false);
                 setNewFieldName("");
+                setFieldMode("inline");
               }}
               style={{
                 padding: "4px 12px",
