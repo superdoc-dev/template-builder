@@ -15,11 +15,9 @@ export { FieldMenu, FieldList };
 
 type Editor = NonNullable<SuperDoc["activeEditor"]>;
 
-const getTemplateFieldsFromEditor = (
-  editor: Editor,
-): Types.TemplateField[] => {
-  const structuredContentHelpers =
-    (editor.helpers as any)?.structuredContentCommands;
+const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
+  const structuredContentHelpers = (editor.helpers as any)
+    ?.structuredContentCommands;
 
   if (!structuredContentHelpers?.getStructuredContentTags) {
     return [];
@@ -28,18 +26,19 @@ const getTemplateFieldsFromEditor = (
   const tags =
     structuredContentHelpers.getStructuredContentTags(editor.state) || [];
 
-  return tags
-    .map((entry: any) => {
-      const node = entry?.node ?? entry;
-      const attrs = node?.attrs ?? {};
+  return tags.map((entry: any) => {
+    const node = entry?.node ?? entry;
+    const attrs = node?.attrs ?? {};
+    const nodeType = node?.type?.name || "";
+    const mode = nodeType.includes("Block") ? "block" : "inline";
 
-      return {
-        id: attrs.id,
-        alias: attrs.alias || attrs.label || "",
-        tag: attrs.tag,
-      } as Types.TemplateField;
-    })
-    .filter((field: Types.TemplateField) => Boolean(field.id));
+    return {
+      id: attrs.id,
+      alias: attrs.alias || attrs.label || "",
+      tag: attrs.tag,
+      mode,
+    } as Types.TemplateField;
+  });
 };
 
 const areTemplateFieldsEqual = (
@@ -59,7 +58,8 @@ const areTemplateFieldsEqual = (
       left.id !== right.id ||
       left.alias !== right.alias ||
       left.tag !== right.tag ||
-      left.position !== right.position
+      left.position !== right.position ||
+      left.mode !== right.mode
     ) {
       return false;
     }
@@ -97,6 +97,26 @@ const resolveToolbar = (
   };
 };
 
+const MENU_VIEWPORT_PADDING = 10;
+const MENU_APPROX_WIDTH = 250;
+const MENU_APPROX_HEIGHT = 300;
+
+const clampToViewport = (rect: DOMRect): DOMRect => {
+  const maxLeft = window.innerWidth - MENU_APPROX_WIDTH - MENU_VIEWPORT_PADDING;
+  const maxTop =
+    window.innerHeight - MENU_APPROX_HEIGHT - MENU_VIEWPORT_PADDING;
+
+  const clampedLeft = Math.min(rect.left, maxLeft);
+  const clampedTop = Math.min(rect.top, maxTop);
+
+  return new DOMRect(
+    Math.max(clampedLeft, MENU_VIEWPORT_PADDING),
+    Math.max(clampedTop, MENU_VIEWPORT_PADDING),
+    rect.width,
+    rect.height,
+  );
+};
+
 const SuperDocTemplateBuilder = forwardRef<
   Types.SuperDocTemplateBuilderHandle,
   Types.SuperDocTemplateBuilderProps
@@ -123,7 +143,9 @@ const SuperDocTemplateBuilder = forwardRef<
   const [templateFields, setTemplateFields] = useState<Types.TemplateField[]>(
     fields.initial || [],
   );
-  const [selectedFieldId, setSelectedFieldId] = useState<string | null>(null);
+  const [selectedFieldId, setSelectedFieldId] = useState<
+    string | number | null
+  >(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState<DOMRect | undefined>();
   const [menuQuery, setMenuQuery] = useState<string>("");
@@ -143,7 +165,7 @@ const SuperDocTemplateBuilder = forwardRef<
     menuVisibleRef.current = menuVisible;
   }, [menuVisible]);
 
-  const trigger = menu.trigger || "{{";
+  const trigger = menu.trigger || "{{"; // Default trigger
 
   const availableFields = fieldsRef.current.available || [];
 
@@ -182,54 +204,52 @@ const SuperDocTemplateBuilder = forwardRef<
       if (!superdocRef.current?.activeEditor) return false;
 
       const editor = superdocRef.current.activeEditor;
-      const fieldId = `field_${Date.now()}`;
+      const previousFields = templateFields;
 
       const success =
         mode === "inline"
           ? editor.commands.insertStructuredContentInline?.({
-            attrs: {
-              id: fieldId,
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          })
+              attrs: {
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            })
           : editor.commands.insertStructuredContentBlock?.({
-            attrs: {
-              id: fieldId,
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          });
+              attrs: {
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            });
 
       if (success) {
-        const newField: Types.TemplateField = {
-          id: fieldId,
-          alias: field.alias,
-          tag: field.category,
-        };
+        const updatedFields = getTemplateFieldsFromEditor(editor);
 
-        setTemplateFields((prev) => {
-          const updated = [...prev, newField];
-          onFieldsChange?.(updated);
-          return updated;
-        });
+        setTemplateFields(updatedFields);
+        onFieldsChange?.(updatedFields);
 
-        onFieldInsert?.(newField);
+        const insertedField = updatedFields.find(
+          (candidate) =>
+            !previousFields.some((existing) => existing.id === candidate.id),
+        );
+
+        if (insertedField) {
+          onFieldInsert?.(insertedField);
+        }
       }
 
       return success;
     },
-    [onFieldInsert, onFieldsChange],
+    [onFieldInsert, onFieldsChange, templateFields],
   );
 
   const updateField = useCallback(
-    (id: string, updates: Partial<Types.TemplateField>): boolean => {
+    (id: string | number, updates: Partial<Types.TemplateField>): boolean => {
       if (!superdocRef.current?.activeEditor) return false;
 
       const editor = superdocRef.current.activeEditor;
@@ -255,7 +275,7 @@ const SuperDocTemplateBuilder = forwardRef<
   );
 
   const deleteField = useCallback(
-    (id: string): boolean => {
+    (id: string | number): boolean => {
       const editor = superdocRef.current?.activeEditor;
 
       if (!editor) {
@@ -328,7 +348,7 @@ const SuperDocTemplateBuilder = forwardRef<
   );
 
   const selectField = useCallback(
-    (id: string) => {
+    (id: string | number) => {
       if (!superdocRef.current?.activeEditor) return;
 
       const editor = superdocRef.current.activeEditor;
@@ -385,7 +405,9 @@ const SuperDocTemplateBuilder = forwardRef<
 
                 if (text === trigger) {
                   const coords = e.view.coordsAtPos(from);
-                  const bounds = new DOMRect(coords.left, coords.top, 0, 0);
+                  const bounds = clampToViewport(
+                    new DOMRect(coords.left, coords.top, 0, 0),
+                  );
 
                   const cleanup = () => {
                     const editor = superdocRef.current?.activeEditor;
@@ -435,7 +457,9 @@ const SuperDocTemplateBuilder = forwardRef<
               updateMenuFilter(queryText);
 
               const coords = e.view.coordsAtPos(from);
-              const bounds = new DOMRect(coords.left, coords.top, 0, 0);
+              const bounds = clampToViewport(
+                new DOMRect(coords.left, coords.top, 0, 0),
+              );
               setMenuPosition(bounds);
             });
 
@@ -472,12 +496,16 @@ const SuperDocTemplateBuilder = forwardRef<
     initSuperDoc();
 
     return () => {
-      if (superdocRef.current) {
-        if (typeof superdocRef.current.destroy === "function") {
-          superdocRef.current.destroy();
-        }
-        superdocRef.current = null;
+      triggerCleanupRef.current = null;
+      menuTriggerFromRef.current = null;
+
+      const instance = superdocRef.current;
+
+      if (instance && typeof instance.destroy === "function") {
+        instance.destroy();
       }
+
+      superdocRef.current = null;
     };
   }, [
     document?.source,
@@ -498,12 +526,16 @@ const SuperDocTemplateBuilder = forwardRef<
       menuTriggerFromRef.current = null;
       resetMenuFilter();
 
+      const mode = (field.metadata?.mode as "inline" | "block") || "inline";
+
       if (field.id.startsWith("custom_") && onFieldCreate) {
         try {
           const createdField = await onFieldCreate(field);
 
           if (createdField) {
-            insertFieldInternal("inline", {
+            const createdMode =
+              (createdField.metadata?.mode as "inline" | "block") || mode;
+            insertFieldInternal(createdMode, {
               alias: createdField.label,
               category: createdField.category,
               metadata: createdField.metadata,
@@ -517,7 +549,7 @@ const SuperDocTemplateBuilder = forwardRef<
         }
       }
 
-      insertFieldInternal("inline", {
+      insertFieldInternal(mode, {
         alias: field.label,
         category: field.category,
         metadata: field.metadata,
@@ -564,13 +596,17 @@ const SuperDocTemplateBuilder = forwardRef<
   }, [templateFields, selectedFieldId, selectField]);
 
   const exportTemplate = useCallback(
-    async (options?: { fileName?: string }): Promise<void> => {
+    async (config?: Types.ExportConfig): Promise<void | Blob> => {
+      const { fileName = "document", triggerDownload = true } = config || {};
 
       try {
-        await superdocRef.current?.export({
+        const result = await superdocRef.current?.export({
           exportType: ["docx"],
-          exportedName: options?.fileName ? options?.fileName : "document"
+          exportedName: fileName,
+          triggerDownload,
         });
+
+        return result;
       } catch (error) {
         console.error("Failed to export DOCX", error);
         throw error;
@@ -611,6 +647,7 @@ const SuperDocTemplateBuilder = forwardRef<
               fields={templateFields}
               onSelect={(field) => selectField(field.id)}
               onDelete={deleteField}
+              onUpdate={(field) => updateField(field.id, field)}
               selectedFieldId={selectedFieldId || undefined}
             />
           </div>
@@ -640,6 +677,7 @@ const SuperDocTemplateBuilder = forwardRef<
               fields={templateFields}
               onSelect={(field) => selectField(field.id)}
               onDelete={deleteField}
+              onUpdate={(field) => updateField(field.id, field)}
               selectedFieldId={selectedFieldId || undefined}
             />
           </div>

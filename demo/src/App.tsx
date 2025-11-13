@@ -9,44 +9,38 @@ import "superdoc/dist/style.css";
 import "./App.css";
 
 const availableFields: FieldDefinition[] = [
-  // Contact Information
-  { id: "customer_name", label: "Customer Name", category: "Contact" },
-  { id: "customer_email", label: "Customer Email", category: "Contact" },
-  { id: "customer_phone", label: "Customer Phone", category: "Contact" },
-  { id: "customer_address", label: "Customer Address", category: "Contact" },
+  // Agreement
+  { id: '1242142770', label: 'Agreement Date', category: 'Agreement' },
 
-  // Company Information
-  { id: 'company_name', label: 'Company Name', category: 'Company' },
-  { id: 'company_address', label: 'Company Address', category: 'Company' },
-  { id: 'company_phone', label: 'Company Phone', category: 'Company' },
-  { id: 'company_email', label: 'Company Email', category: 'Company' },
+  // Parties
+  { id: '1242142771', label: 'User Name', category: 'Parties' },
+  { id: '1242142772', label: 'Company Name', category: 'Parties' },
 
-  // Invoice/Order
-  { id: 'invoice_number', label: 'Invoice Number', category: 'Invoice' },
-  { id: 'invoice_date', label: 'Invoice Date', category: 'Invoice' },
-  { id: 'due_date', label: 'Due Date', category: 'Invoice' },
-  { id: 'total_amount', label: 'Total Amount', category: 'Invoice' },
-  { id: 'tax_amount', label: 'Tax Amount', category: 'Invoice' },
-  { id: 'subtotal', label: 'Subtotal', category: 'Invoice' },
+  // Scope
+  { id: '1242142773', label: 'Service Type', category: 'Scope' },
 
   // Legal
-  { id: 'effective_date', label: 'Effective Date', category: 'Legal' },
-  { id: 'termination_date', label: 'Termination Date', category: 'Legal' },
-  { id: 'jurisdiction', label: 'Jurisdiction', category: 'Legal' },
-  { id: 'governing_law', label: 'Governing Law', category: 'Legal' },
+  { id: '1242142774', label: 'Agreement Jurisdiction', category: 'Legal' },
 
-  // Product/Service
-  { id: 'product_name', label: 'Product Name', category: 'Product' },
-  { id: 'product_description', label: 'Product Description', category: 'Product' },
-  { id: 'quantity', label: 'Quantity', category: 'Product' },
-  { id: 'unit_price', label: 'Unit Price', category: 'Product' },
+  // Company Details
+  { id: '1242142775', label: 'Company Address', category: 'Company' },
+
+  // Signatures
+  { id: '1242142776', label: 'Signature', category: 'Signatures' },
 ];
 
 export function App() {
   const [fields, setFields] = useState<TemplateField[]>([]);
   const [events, setEvents] = useState<string[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [documentSource, setDocumentSource] = useState<string | File>(
+    "https://storage.googleapis.com/public_static_hosting/public_demo_docs/new_service_agreement.docx",
+  );
   const builderRef = useRef<SuperDocTemplateBuilderHandle>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const importingRef = useRef(false);
 
   const log = useCallback((msg: string) => {
     const time = new Date().toLocaleTimeString();
@@ -63,7 +57,7 @@ export function App() {
     log(`✓ Inserted: ${field.alias}`);
   }, [log]);
 
-  const handleFieldDelete = useCallback((fieldId: string) => {
+  const handleFieldDelete = useCallback((fieldId: string | number) => {
     log(`✗ Deleted: ${fieldId}`);
   }, [log]);
 
@@ -75,6 +69,12 @@ export function App() {
 
   const handleReady = useCallback(() => {
     log('✓ Template builder ready');
+    if (importingRef.current) {
+      log('📄 Document imported');
+      importingRef.current = false;
+      setImportError(null);
+      setIsImporting(false);
+    }
   }, [log]);
 
   const handleTrigger = useCallback(() => {
@@ -114,9 +114,35 @@ export function App() {
   };
 
   const documentConfig = useMemo(() => ({
-    source: "https://storage.googleapis.com/public_static_hosting/public_demo_docs/service_agreement.docx",
+    source: documentSource,
     mode: 'editing' as const
-  }), []);
+  }), [documentSource]);
+
+  const handleImportButtonClick = useCallback(() => {
+    if (isImporting) return;
+    fileInputRef.current?.click();
+  }, [isImporting]);
+
+  const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) return;
+
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    if (extension !== 'docx') {
+      const message = 'Invalid file type. Please choose a .docx file.';
+      setImportError(message);
+      log('⚠️ ' + message);
+      return;
+    }
+
+    importingRef.current = true;
+    setImportError(null);
+    setIsImporting(true);
+    setDocumentSource(file);
+    log(`📥 Importing "${file.name}"`);
+  }, [log]);
 
   const fieldsConfig = useMemo(() => ({
     available: availableFields,
@@ -160,15 +186,35 @@ export function App() {
             <span className="hint">Tab/Shift+Tab to navigate</span>
           </div>
           <div className="toolbar-right">
+            <input
+              type="file"
+              accept=".docx"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileInputChange}
+            />
+            <button
+              onClick={handleImportButtonClick}
+              className="import-button"
+              disabled={isImporting || isDownloading}
+            >
+              {isImporting ? 'Importing…' : 'Import File'}
+            </button>
             <button
               onClick={handleExportTemplate}
               className="export-button"
-              disabled={isDownloading}
+              disabled={isDownloading || isImporting}
             >
               {isDownloading ? "Exporting..." : "Export Template"}
             </button>
           </div>
         </div>
+
+        {importError && (
+          <div className="toolbar-error" role="alert">
+            {importError}
+          </div>
+        )}
 
         <SuperDocTemplateBuilder
           ref={builderRef}

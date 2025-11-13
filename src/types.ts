@@ -9,10 +9,11 @@ export interface FieldDefinition {
 }
 
 export interface TemplateField {
-  id: string;
+  id: string | number;
   alias: string;
   tag?: string;
   position?: number;
+  mode?: "inline" | "block";
 }
 
 export interface TriggerEvent {
@@ -38,8 +39,9 @@ export interface FieldMenuProps {
 export interface FieldListProps {
   fields: TemplateField[];
   onSelect: (field: TemplateField) => void;
-  onDelete: (fieldId: string) => void;
-  selectedFieldId?: string;
+  onDelete: (fieldId: string | number) => void;
+  onUpdate?: (field: TemplateField) => void;
+  selectedFieldId?: string | number;
 }
 
 export interface DocumentConfig {
@@ -75,6 +77,24 @@ export interface ToolbarConfig {
   icons?: Record<string, any>;
 }
 
+/**
+ * Configuration options for exporting templates
+ */
+export interface ExportConfig {
+  /**
+   * The name of the exported file (without extension)
+   * @default "document"
+   */
+  fileName?: string;
+  /**
+   * Whether to trigger an automatic download in the browser
+   * - true: Automatically downloads the file
+   * - false: Returns the Blob data for manual handling (e.g., saving to database)
+   * @default true
+   */
+  triggerDownload?: boolean;
+}
+
 export interface SuperDocTemplateBuilderProps {
   document?: DocumentConfig;
   fields?: FieldsConfig;
@@ -87,7 +107,7 @@ export interface SuperDocTemplateBuilderProps {
   onTrigger?: (event: TriggerEvent) => void;
   onFieldInsert?: (field: TemplateField) => void;
   onFieldUpdate?: (field: TemplateField) => void;
-  onFieldDelete?: (fieldId: string) => void;
+  onFieldDelete?: (fieldId: string | number) => void;
   onFieldsChange?: (fields: TemplateField[]) => void;
   onFieldSelect?: (field: TemplateField | null) => void;
   onFieldCreate?: (
@@ -105,11 +125,14 @@ export interface SuperDocTemplateBuilderHandle {
   insertBlockField: (
     field: Partial<FieldDefinition> & { alias: string },
   ) => boolean;
-  updateField: (id: string, updates: Partial<TemplateField>) => boolean;
-  deleteField: (id: string) => boolean;
-  selectField: (id: string) => void;
+  updateField: (
+    id: string | number,
+    updates: Partial<TemplateField>,
+  ) => boolean;
+  deleteField: (id: string | number) => boolean;
+  selectField: (id: string | number) => void;
   nextField: () => void;
   previousField: () => void;
   getFields: () => TemplateField[];
-  exportTemplate: (options?: { fileName?: string }) => Promise<void>;
+  exportTemplate: (config?: ExportConfig) => Promise<void | Blob>;
 }

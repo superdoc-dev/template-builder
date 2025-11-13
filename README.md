@@ -24,9 +24,9 @@ function TemplateEditor() {
       
       fields={{
         available: [
-          { id: 'customer_name', label: 'Customer Name', category: 'Contact' },
-          { id: 'invoice_date', label: 'Invoice Date', category: 'Invoice' },
-          { id: 'amount', label: 'Amount', category: 'Invoice' }
+          { id: '1324567890', label: 'Customer Name', category: 'Contact' },
+          { id: '1324567891', label: 'Invoice Date', category: 'Invoice' },
+          { id: '1324567892', label: 'Amount', category: 'Invoice' }
         ]
       }}
       
@@ -47,8 +47,8 @@ function TemplateEditor() {
 ```javascript
 {
   fields: [
-    { id: "field_123", alias: "Customer Name", tag: "contact" },
-    { id: "field_124", alias: "Invoice Date", tag: "invoice" }
+    { id: "1324567890", alias: "Customer Name", tag: "contact" },
+    { id: "1324567891", alias: "Invoice Date", tag: "invoice" }
   ],
   document: { /* ProseMirror document JSON */ }
 }
@@ -206,13 +206,64 @@ function TemplateEditor() {
 
 ## Export Template
 
-Get the complete template data for saving:
+The `exportTemplate` method supports two modes of operation via the `ExportConfig` interface:
+
+### 1. Download Mode (Default)
+
+Automatically downloads the template as a file in the browser:
+
+```jsx
+const handleDownload = async () => {
+  // Download with default filename "document.docx"
+  await ref.current?.exportTemplate();
+
+  // Or with custom filename
+  await ref.current?.exportTemplate({
+    fileName: 'invoice-template.docx'
+  });
+};
+```
+
+### 2. Blob Mode (for Database/API)
+
+Get the template as a Blob for saving to your database or API:
 
 ```jsx
 const handleSave = async () => {
-  await ref.current?.exportTemplate({ fileName: 'invoice.docx' });
+  // Get the blob without triggering download
+  const blob = await ref.current?.exportTemplate({
+    fileName: 'invoice-template.docx',
+    triggerDownload: false
+  });
+
+  if (blob) {
+    // Send to your API/database
+    const formData = new FormData();
+    formData.append('template', blob, 'invoice-template.docx');
+
+    await fetch('/api/templates', {
+      method: 'POST',
+      body: formData
+    });
+  }
 };
 ```
+
+### ExportConfig Interface
+
+```typescript
+interface ExportConfig {
+  fileName?: string;         // Default: "document"
+  triggerDownload?: boolean; // Default: true
+}
+
+// Method signature
+exportTemplate(config?: ExportConfig): Promise<void | Blob>
+```
+
+**Return value:**
+- `Promise<void>` when `triggerDownload: true` (download happens automatically)
+- `Promise<Blob>` when `triggerDownload: false` (returns the docx data)
 
 ## TypeScript
 
@@ -220,11 +271,12 @@ Full TypeScript support included:
 
 ```typescript
 import SuperDocTemplateBuilder from '@superdoc-dev/template-builder';
-import type { 
+import type {
   TemplateField,
   FieldDefinition,
   TriggerEvent,
-  SuperDocTemplateBuilderHandle 
+  ExportConfig,
+  SuperDocTemplateBuilderHandle
 } from '@superdoc-dev/template-builder';
 
 const ref = useRef<SuperDocTemplateBuilderHandle>(null);
