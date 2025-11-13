@@ -5,7 +5,7 @@ import type {
   TemplateField,
   FieldDefinition,
 } from "@superdoc-dev/template-builder";
-import "superdoc/style.css";
+import "superdoc/dist/style.css";
 import "./App.css";
 
 const availableFields: FieldDefinition[] = [
