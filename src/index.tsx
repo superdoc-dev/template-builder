@@ -588,12 +588,17 @@ const SuperDocTemplateBuilder = forwardRef<
   }, [templateFields, selectedFieldId, selectField]);
 
   const exportTemplate = useCallback(
-    async (options?: { fileName?: string }): Promise<void> => {
+    async (config?: Types.ExportConfig): Promise<void | Blob> => {
+      const { fileName = "document", triggerDownload = true } = config || {};
+
       try {
-        await superdocRef.current?.export({
+        const result = await superdocRef.current?.export({
           exportType: ["docx"],
-          exportedName: options?.fileName ? options?.fileName : "document",
+          exportedName: fileName,
+          triggerDownload,
         });
+
+        return result;
       } catch (error) {
         console.error("Failed to export DOCX", error);
         throw error;
