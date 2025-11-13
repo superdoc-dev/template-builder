@@ -76,6 +76,24 @@ export interface ToolbarConfig {
   icons?: Record<string, any>;
 }
 
+/**
+ * Configuration options for exporting templates
+ */
+export interface ExportConfig {
+  /**
+   * The name of the exported file (without extension)
+   * @default "document"
+   */
+  fileName?: string;
+  /**
+   * Whether to trigger an automatic download in the browser
+   * - true: Automatically downloads the file
+   * - false: Returns the Blob data for manual handling (e.g., saving to database)
+   * @default true
+   */
+  triggerDownload?: boolean;
+}
+
 export interface SuperDocTemplateBuilderProps {
   document?: DocumentConfig;
   fields?: FieldsConfig;
@@ -115,5 +133,5 @@ export interface SuperDocTemplateBuilderHandle {
   nextField: () => void;
   previousField: () => void;
   getFields: () => TemplateField[];
-  exportTemplate: (options?: { fileName?: string }) => Promise<void>;
+  exportTemplate: (config?: ExportConfig) => Promise<void | Blob>;
 }
