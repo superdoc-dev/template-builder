@@ -118,16 +118,33 @@ export const FieldList: React.FC<FieldListProps> = ({
                 >
                   {field.id}
                 </div>
-                {field.alias && field.alias !== field.id && (
-                  <div
-                    style={{
-                      fontSize: "12px",
-                      color: "#4b5563",
-                    }}
-                  >
-                    {field.alias}
-                  </div>
-                )}
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    fontSize: "12px",
+                    color: "#4b5563",
+                  }}
+                >
+                  {field.alias && field.alias !== field.id && (
+                    <span>{field.alias}</span>
+                  )}
+                  {field.mode && (
+                    <span
+                      style={{
+                        fontSize: "10px",
+                        padding: "2px 6px",
+                        borderRadius: "4px",
+                        background: field.mode === "block" ? "#dbeafe" : "#f3f4f6",
+                        color: field.mode === "block" ? "#1e40af" : "#4b5563",
+                        fontWeight: "500",
+                      }}
+                    >
+                      {field.mode}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
           ))}

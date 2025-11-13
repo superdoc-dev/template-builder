@@ -13,6 +13,7 @@ export interface TemplateField {
   alias: string;
   tag?: string;
   position?: number;
+  mode?: "inline" | "block";
 }
 
 export interface TriggerEvent {
