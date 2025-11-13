@@ -189,7 +189,14 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
               fontSize: "13px",
             }}
           >
-            <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                cursor: "pointer",
+              }}
+            >
               <input
                 type="radio"
                 value="inline"
@@ -198,7 +205,14 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
               />
               Inline
             </label>
-            <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "4px",
+                cursor: "pointer",
+              }}
+            >
               <input
                 type="radio"
                 value="block"

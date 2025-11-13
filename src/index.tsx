@@ -209,23 +209,23 @@ const SuperDocTemplateBuilder = forwardRef<
       const success =
         mode === "inline"
           ? editor.commands.insertStructuredContentInline?.({
-            attrs: {
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          })
+              attrs: {
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            })
           : editor.commands.insertStructuredContentBlock?.({
-            attrs: {
-              alias: field.alias,
-              tag: field.metadata
-                ? JSON.stringify(field.metadata)
-                : field.category,
-            },
-            text: field.defaultValue || field.alias,
-          });
+              attrs: {
+                alias: field.alias,
+                tag: field.metadata
+                  ? JSON.stringify(field.metadata)
+                  : field.category,
+              },
+              text: field.defaultValue || field.alias,
+            });
 
       if (success) {
         const updatedFields = getTemplateFieldsFromEditor(editor);
@@ -533,7 +533,8 @@ const SuperDocTemplateBuilder = forwardRef<
           const createdField = await onFieldCreate(field);
 
           if (createdField) {
-            const createdMode = (createdField.metadata?.mode as "inline" | "block") || mode;
+            const createdMode =
+              (createdField.metadata?.mode as "inline" | "block") || mode;
             insertFieldInternal(createdMode, {
               alias: createdField.label,
               category: createdField.category,

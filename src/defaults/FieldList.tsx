@@ -136,7 +136,8 @@ export const FieldList: React.FC<FieldListProps> = ({
                         fontSize: "10px",
                         padding: "2px 6px",
                         borderRadius: "4px",
-                        background: field.mode === "block" ? "#dbeafe" : "#f3f4f6",
+                        background:
+                          field.mode === "block" ? "#dbeafe" : "#f3f4f6",
                         color: field.mode === "block" ? "#1e40af" : "#4b5563",
                         fontWeight: "500",
                       }}
