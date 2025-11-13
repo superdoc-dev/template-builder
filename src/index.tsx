@@ -29,11 +29,14 @@ const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
   return tags.map((entry: any) => {
     const node = entry?.node ?? entry;
     const attrs = node?.attrs ?? {};
+    const nodeType = node?.type?.name || "";
+    const mode = nodeType.includes("Block") ? "block" : "inline";
 
     return {
       id: attrs.id,
       alias: attrs.alias || attrs.label || "",
       tag: attrs.tag,
+      mode,
     } as Types.TemplateField;
   });
 };
@@ -55,7 +58,8 @@ const areTemplateFieldsEqual = (
       left.id !== right.id ||
       left.alias !== right.alias ||
       left.tag !== right.tag ||
-      left.position !== right.position
+      left.position !== right.position ||
+      left.mode !== right.mode
     ) {
       return false;
     }
@@ -522,12 +526,15 @@ const SuperDocTemplateBuilder = forwardRef<
       menuTriggerFromRef.current = null;
       resetMenuFilter();
 
+      const mode = (field.metadata?.mode as "inline" | "block") || "inline";
+
       if (field.id.startsWith("custom_") && onFieldCreate) {
         try {
           const createdField = await onFieldCreate(field);
 
           if (createdField) {
-            insertFieldInternal("inline", {
+            const createdMode = (createdField.metadata?.mode as "inline" | "block") || mode;
+            insertFieldInternal(createdMode, {
               alias: createdField.label,
               category: createdField.category,
               metadata: createdField.metadata,
@@ -541,7 +548,7 @@ const SuperDocTemplateBuilder = forwardRef<
         }
       }
 
-      insertFieldInternal("inline", {
+      insertFieldInternal(mode, {
         alias: field.label,
         category: field.category,
         metadata: field.metadata,

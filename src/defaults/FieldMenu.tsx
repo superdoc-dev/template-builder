@@ -14,11 +14,13 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
+  const [fieldMode, setFieldMode] = useState<"inline" | "block">("inline");
 
   useEffect(() => {
     if (!isVisible) {
       setIsCreating(false);
       setNewFieldName("");
+      setFieldMode("inline");
     }
   }, [isVisible]);
 
@@ -103,6 +105,7 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
       id: `custom_${Date.now()}`,
       label: trimmedName,
       category: "Custom",
+      metadata: { mode: fieldMode },
     };
 
     try {
@@ -115,6 +118,7 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
     } finally {
       setIsCreating(false);
       setNewFieldName("");
+      setFieldMode("inline");
     }
   };
 
@@ -176,6 +180,33 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
               borderRadius: "3px",
             }}
           />
+          <div
+            style={{
+              marginTop: "8px",
+              display: "flex",
+              gap: "12px",
+              fontSize: "13px",
+            }}
+          >
+            <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+              <input
+                type="radio"
+                value="inline"
+                checked={fieldMode === "inline"}
+                onChange={() => setFieldMode("inline")}
+              />
+              Inline
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: "4px", cursor: "pointer" }}>
+              <input
+                type="radio"
+                value="block"
+                checked={fieldMode === "block"}
+                onChange={() => setFieldMode("block")}
+              />
+              Block
+            </label>
+          </div>
           <div
             style={{
               marginTop: "8px",
