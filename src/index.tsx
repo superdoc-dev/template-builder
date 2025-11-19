@@ -476,6 +476,8 @@ const SuperDocTemplateBuilder = forwardRef<
       };
 
       const instance = new SuperDoc({
+        selector: containerRef.current!,
+        documentMode: document?.mode || "editing",
         ...config,
         ...(toolbarSettings && {
           toolbar: toolbarSettings.selector,
