@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FieldDefinition, FieldMenuProps } from "../types";
 
 export const FieldMenu: React.FC<FieldMenuProps> = ({
@@ -11,10 +11,14 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
   onSelect,
   onClose,
   onCreateField,
+  existingFields = [],
+  onSelectExisting,
 }) => {
   const [isCreating, setIsCreating] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
   const [fieldMode, setFieldMode] = useState<"inline" | "block">("inline");
+  const [existingExpanded, setExistingExpanded] = useState(true);
+  const [availableExpanded, setAvailableExpanded] = useState(true);
 
   useEffect(() => {
     if (!isVisible) {
@@ -35,65 +39,18 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
       borderRadius: "4px",
       boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
       padding: "8px 0",
-      minWidth: "200px",
+      width: "280px",
     };
   }, [position]);
 
   const fieldsToDisplay = filteredFields ?? availableFields;
   const hasFilter = Boolean(filterQuery);
 
-  const groupedFields = useMemo(() => {
-    const groups: { category: string; fields: FieldDefinition[] }[] = [];
-    const categoryIndex = new Map<string, number>();
-
-    fieldsToDisplay.forEach((field) => {
-      const categoryName = field.category?.trim() || "Uncategorized";
-      const existingIndex = categoryIndex.get(categoryName);
-
-      if (existingIndex !== undefined) {
-        groups[existingIndex].fields.push(field);
-        return;
-      }
-
-      categoryIndex.set(categoryName, groups.length);
-      groups.push({ category: categoryName, fields: [field] });
-    });
-
-    return groups;
-  }, [fieldsToDisplay]);
-
-  const [expandedCategories, setExpandedCategories] = useState<
-    Record<string, boolean>
-  >({});
-
   useEffect(() => {
-    setExpandedCategories((previous) => {
-      if (groupedFields.length === 0) {
-        return Object.keys(previous).length === 0 ? previous : {};
-      }
-
-      const next: Record<string, boolean> = {};
-      let hasChanges = Object.keys(previous).length !== groupedFields.length;
-
-      groupedFields.forEach(({ category }, index) => {
-        // Auto-expand all categories when filtering is active
-        const target = hasFilter ? true : (previous[category] ?? index === 0);
-        next[category] = target;
-        if (!hasChanges && previous[category] !== target) {
-          hasChanges = true;
-        }
-      });
-
-      return hasChanges ? next : previous;
-    });
-  }, [groupedFields, hasFilter]);
-
-  const toggleCategory = useCallback((category: string) => {
-    setExpandedCategories((previous) => ({
-      ...previous,
-      [category]: !previous[category],
-    }));
-  }, []);
+    if (hasFilter) {
+      setAvailableExpanded(true);
+    }
+  }, [hasFilter]);
 
   if (!isVisible) return null;
 
@@ -104,7 +61,6 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
     const newField: FieldDefinition = {
       id: `custom_${Date.now()}`,
       label: trimmedName,
-      category: "Custom",
       metadata: { mode: fieldMode },
     };
 
@@ -272,7 +228,110 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
         />
       )}
 
-      {groupedFields.length === 0 ? (
+      {existingFields.length > 0 && (() => {
+        const groupedExisting = new Map<string | undefined, typeof existingFields>();
+
+        existingFields.forEach((field) => {
+          const key = field.group || `individual-${field.id}`;
+          const existing = groupedExisting.get(key) || [];
+          existing.push(field);
+          groupedExisting.set(key, existing);
+        });
+
+        const uniqueEntries = Array.from(groupedExisting.values()).map((fields) => {
+          const representative = fields[0];
+          return {
+            ...representative,
+            count: fields.length,
+          };
+        });
+
+        return (
+          <div style={{ borderBottom: "1px solid #f0f0f0" }}>
+            <button
+              type="button"
+              onClick={() => setExistingExpanded(!existingExpanded)}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "8px 16px",
+                background: "transparent",
+                border: "none",
+                cursor: "pointer",
+                fontWeight: 500,
+                fontSize: "13px",
+                color: "#374151",
+                textAlign: "left",
+              }}
+            >
+              <span>Existing Fields ({uniqueEntries.length})</span>
+              <span
+                aria-hidden
+                style={{
+                  display: "inline-block",
+                  width: "8px",
+                  height: "8px",
+                  borderRight: "2px solid #666",
+                  borderBottom: "2px solid #666",
+                  transform: existingExpanded ? "rotate(45deg)" : "rotate(-45deg)",
+                  transition: "transform 0.2s ease",
+                }}
+              />
+            </button>
+            {existingExpanded && (
+              <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+                {uniqueEntries.map((entry) => (
+                  <div
+                    key={entry.group || entry.id}
+                    className="field-menu-item"
+                    onClick={() => onSelectExisting?.(entry)}
+                    style={{
+                      padding: "8px 16px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      justifyContent: "space-between",
+                      gap: "8px",
+                    }}
+                  >
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 500, fontSize: "13px" }}>
+                        {entry.alias || entry.id}
+                      </div>
+                      <div
+                        style={{
+                          fontSize: "11px",
+                          color: "#9ca3af",
+                          marginTop: "2px",
+                        }}
+                      >
+                        {entry.group ? `group (${entry.count} fields)` : `ID: ${entry.id}`}
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "#6b7280",
+                        padding: "2px 6px",
+                        background: "#f3f4f6",
+                        borderRadius: "3px",
+                        textTransform: "capitalize",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {entry.mode || "inline"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {fieldsToDisplay.length === 0 ? (
         <div
           style={{
             padding: "16px",
@@ -284,84 +343,87 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
           No matching fields
         </div>
       ) : (
-        groupedFields.map(({ category, fields }, index) => {
-          const isExpanded = Boolean(expandedCategories[category]);
-          const itemsMaxHeight = `${Math.max(fields.length * 40, 0)}px`;
-
-          return (
-            <div
-              key={category}
+        <div style={{ borderBottom: "1px solid #f0f0f0" }}>
+          <button
+            type="button"
+            onClick={() => setAvailableExpanded(!availableExpanded)}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "8px 16px",
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              fontWeight: 500,
+              fontSize: "13px",
+              color: "#374151",
+              textAlign: "left",
+            }}
+          >
+            <span>Available Fields ({fieldsToDisplay.length})</span>
+            <span
+              aria-hidden
               style={{
-                borderTop:
-                  index === 0 && allowCreate ? undefined : "1px solid #f0f0f0",
+                display: "inline-block",
+                width: "8px",
+                height: "8px",
+                borderRight: "2px solid #666",
+                borderBottom: "2px solid #666",
+                transform: availableExpanded ? "rotate(45deg)" : "rotate(-45deg)",
+                transition: "transform 0.2s ease",
               }}
-            >
-              <button
-                type="button"
-                onClick={() => toggleCategory(category)}
-                style={{
-                  width: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  padding: "8px 16px",
-                  background: "transparent",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 500,
-                  textAlign: "left",
-                }}
-              >
-                <span>
-                  {category} ({fields.length})
-                </span>
-                <span
-                  aria-hidden
+            />
+          </button>
+          {availableExpanded && (
+            <div style={{ maxHeight: "300px", overflowY: "auto" }}>
+              {fieldsToDisplay.map((field) => (
+                <div
+                  key={field.id}
+                  className="field-menu-item"
+                  onClick={() => onSelect(field)}
                   style={{
-                    display: "inline-block",
-                    width: "8px",
-                    height: "8px",
-                    borderRight: "2px solid #666",
-                    borderBottom: "2px solid #666",
-                    transform: isExpanded ? "rotate(45deg)" : "rotate(-45deg)",
-                    transition: "transform 0.2s ease",
-                    marginLeft: "12px",
+                    padding: "8px 16px",
+                    cursor: "pointer",
+                    display: "flex",
+                    alignItems: "flex-start",
+                    justifyContent: "space-between",
+                    gap: "8px",
                   }}
-                />
-              </button>
-              <div
-                data-category={category}
-                aria-hidden={!isExpanded}
-                style={{
-                  overflow: "hidden",
-                  maxHeight: isExpanded ? itemsMaxHeight : "0px",
-                  opacity: isExpanded ? 1 : 0,
-                  transition: "max-height 0.2s ease, opacity 0.2s ease",
-                  pointerEvents: isExpanded ? "auto" : "none",
-                }}
-              >
-                <div style={{ padding: isExpanded ? "4px 0" : 0 }}>
-                  {fields.map((field) => (
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 500, fontSize: "13px" }}>
+                      {field.label || field.id}
+                    </div>
                     <div
-                      key={field.id}
-                      className="field-menu-item"
-                      onClick={() => onSelect(field)}
                       style={{
-                        padding: "8px 16px",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
+                        fontSize: "11px",
+                        color: "#9ca3af",
+                        marginTop: "2px",
                       }}
                     >
-                      <span style={{ fontWeight: 500 }}>{field.label}</span>
+                      ID: {field.id}
                     </div>
-                  ))}
+                  </div>
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "#6b7280",
+                      padding: "2px 6px",
+                      background: "#f3f4f6",
+                      borderRadius: "3px",
+                      textTransform: "capitalize",
+                      flexShrink: 0,
+                    }}
+                  >
+                    {field.metadata?.mode || "inline"}
+                  </span>
                 </div>
-              </div>
+              ))}
             </div>
-          );
-        })
+          )}
+        </div>
       )}
 
       <div

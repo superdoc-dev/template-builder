@@ -52,7 +52,7 @@
   "peerDependencies": {
     "react": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
     "react-dom": "^16.8.0 || ^17.0.0 || ^18.0.0 || ^19.0.0",
-    "superdoc": "^0.29.0"
+    "superdoc": "^0.31.2"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.1.0",
@@ -78,9 +78,9 @@
     "semantic-release": "^25.0.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.47.0",
-    "vite": "^7.2.2",
+    "vite": "^7.2.4",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "^4.0.10"
+    "vitest": "^4.0.13"
   },
   "publishConfig": {
     "access": "public"

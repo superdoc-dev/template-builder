@@ -37,6 +37,7 @@ const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
       alias: attrs.alias || attrs.label || "",
       tag: attrs.tag,
       mode,
+      group: structuredContentHelpers.getGroup?.(attrs.tag) ?? undefined,
     } as Types.TemplateField;
   });
 };
@@ -165,7 +166,7 @@ const SuperDocTemplateBuilder = forwardRef<
     menuVisibleRef.current = menuVisible;
   }, [menuVisible]);
 
-  const trigger = menu.trigger || "{{"; // Default trigger
+  const trigger = menu.trigger || "{{";
 
   const availableFields = fieldsRef.current.available || [];
 
@@ -176,8 +177,7 @@ const SuperDocTemplateBuilder = forwardRef<
 
       return availableFields.filter((field) => {
         const label = field.label.toLowerCase();
-        const category = field.category?.toLowerCase() || "";
-        return label.includes(normalized) || category.includes(normalized);
+        return label.includes(normalized);
       });
     },
     [availableFields],
@@ -195,7 +195,6 @@ const SuperDocTemplateBuilder = forwardRef<
     updateMenuFilter("");
   }, [updateMenuFilter]);
 
-  // Field operations
   const insertFieldInternal = useCallback(
     (
       mode: "inline" | "block",
@@ -213,7 +212,7 @@ const SuperDocTemplateBuilder = forwardRef<
                 alias: field.alias,
                 tag: field.metadata
                   ? JSON.stringify(field.metadata)
-                  : field.category,
+                  : undefined,
               },
               text: field.defaultValue || field.alias,
             })
@@ -222,7 +221,7 @@ const SuperDocTemplateBuilder = forwardRef<
                 alias: field.alias,
                 tag: field.metadata
                   ? JSON.stringify(field.metadata)
-                  : field.category,
+                  : undefined,
               },
               text: field.defaultValue || field.alias,
             });
@@ -279,10 +278,6 @@ const SuperDocTemplateBuilder = forwardRef<
       const editor = superdocRef.current?.activeEditor;
 
       if (!editor) {
-        console.warn(
-          "[SuperDocTemplateBuilder] deleteField called without active editor",
-        );
-
         let removed = false;
         setTemplateFields((prev) => {
           if (!prev.some((field) => field.id === id)) return prev;
@@ -301,15 +296,15 @@ const SuperDocTemplateBuilder = forwardRef<
         return removed;
       }
 
+      const fieldToDelete = templateFields.find((f) => f.id === id);
+      const groupId = fieldToDelete?.group;
+
       let commandResult = false;
       try {
         commandResult =
           editor.commands.deleteStructuredContentById?.(id) ?? false;
-      } catch (error) {
-        console.error(
-          "[SuperDocTemplateBuilder] Delete command failed:",
-          error,
-        );
+      } catch {
+        commandResult = false;
       }
 
       let documentFields = getTemplateFieldsFromEditor(editor);
@@ -317,6 +312,20 @@ const SuperDocTemplateBuilder = forwardRef<
 
       if (!commandResult && fieldStillPresent) {
         documentFields = documentFields.filter((field) => field.id !== id);
+      }
+
+      if (groupId) {
+        const remainingFieldsInGroup = documentFields.filter(
+          (field) => field.group === groupId,
+        );
+
+        if (remainingFieldsInGroup.length === 1) {
+          const lastField = remainingFieldsInGroup[0];
+          editor.commands.updateStructuredContentById?.(lastField.id, {
+            attrs: { tag: undefined },
+          });
+          documentFields = getTemplateFieldsFromEditor(editor);
+        }
       }
 
       let removedFromState = false;
@@ -344,7 +353,7 @@ const SuperDocTemplateBuilder = forwardRef<
 
       return commandResult || removedFromState;
     },
-    [onFieldDelete, onFieldsChange],
+    [onFieldDelete, onFieldsChange, templateFields],
   );
 
   const selectField = useCallback(
@@ -379,7 +388,6 @@ const SuperDocTemplateBuilder = forwardRef<
     [onFieldsChange],
   );
 
-  // Initialize SuperDoc
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -394,7 +402,6 @@ const SuperDocTemplateBuilder = forwardRef<
           if (instance.activeEditor) {
             const editor = instance.activeEditor;
 
-            // Setup trigger detection
             editor.on("update", ({ editor: e }: any) => {
               const { state } = e;
               const { from } = state.selection;
@@ -414,7 +421,7 @@ const SuperDocTemplateBuilder = forwardRef<
                     if (!editor) return;
                     const currentPos = editor.state.selection.from;
                     const tr = editor.state.tr.delete(triggerStart, currentPos);
-                    editor.view.dispatch(tr);
+                    (editor as any).view.dispatch(tr);
                   };
 
                   triggerCleanupRef.current = cleanup;
@@ -463,7 +470,6 @@ const SuperDocTemplateBuilder = forwardRef<
               setMenuPosition(bounds);
             });
 
-            // Track field changes
             editor.on("update", () => {
               discoverFields(editor);
             });
@@ -531,35 +537,88 @@ const SuperDocTemplateBuilder = forwardRef<
       const mode = (field.metadata?.mode as "inline" | "block") || "inline";
 
       if (field.id.startsWith("custom_") && onFieldCreate) {
-        try {
-          const createdField = await onFieldCreate(field);
+        const createdField = await onFieldCreate(field);
 
-          if (createdField) {
-            const createdMode =
-              (createdField.metadata?.mode as "inline" | "block") || mode;
-            insertFieldInternal(createdMode, {
-              alias: createdField.label,
-              category: createdField.category,
-              metadata: createdField.metadata,
-              defaultValue: createdField.defaultValue,
-            });
-            setMenuVisible(false);
-            return;
-          }
-        } catch (error) {
-          console.error("Field creation failed:", error);
+        if (createdField) {
+          const createdMode =
+            (createdField.metadata?.mode as "inline" | "block") || mode;
+          insertFieldInternal(createdMode, {
+            alias: createdField.label,
+            metadata: createdField.metadata,
+            defaultValue: createdField.defaultValue,
+          });
+          setMenuVisible(false);
+          return;
         }
       }
 
       insertFieldInternal(mode, {
         alias: field.label,
-        category: field.category,
         metadata: field.metadata,
         defaultValue: field.defaultValue,
       });
       setMenuVisible(false);
     },
     [insertFieldInternal, onFieldCreate, resetMenuFilter],
+  );
+
+  const handleSelectExisting = useCallback(
+    (field: Types.TemplateField) => {
+      if (triggerCleanupRef.current) {
+        triggerCleanupRef.current();
+        triggerCleanupRef.current = null;
+      }
+      menuTriggerFromRef.current = null;
+      resetMenuFilter();
+
+      const editor = superdocRef.current?.activeEditor;
+      if (!editor) return;
+
+      const structuredContentHelpers = (editor.helpers as any)
+        ?.structuredContentCommands;
+
+      if (!structuredContentHelpers) return;
+
+      const groupId =
+        field.group ||
+        `group-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+
+      const tagWithGroup = structuredContentHelpers.createTagObject?.({
+        group: groupId,
+      });
+
+      const mode = field.mode || "inline";
+
+      const success =
+        mode === "inline"
+          ? editor.commands.insertStructuredContentInline?.({
+              attrs: {
+                alias: field.alias,
+                tag: tagWithGroup,
+              },
+              text: field.alias,
+            })
+          : editor.commands.insertStructuredContentBlock?.({
+              attrs: {
+                alias: field.alias,
+                tag: tagWithGroup,
+              },
+              text: field.alias,
+            });
+
+      if (success) {
+        if (!field.group) {
+          updateField(field.id, { tag: tagWithGroup });
+        }
+
+        setMenuVisible(false);
+
+        const updatedFields = getTemplateFieldsFromEditor(editor);
+        setTemplateFields(updatedFields);
+        onFieldsChange?.(updatedFields);
+      }
+    },
+    [updateField, resetMenuFilter, onFieldsChange],
   );
 
   const handleMenuClose = useCallback(() => {
@@ -572,7 +631,6 @@ const SuperDocTemplateBuilder = forwardRef<
     }
   }, [resetMenuFilter]);
 
-  // Navigation methods
   const nextField = useCallback(() => {
     if (!superdocRef.current?.activeEditor || templateFields.length === 0)
       return;
@@ -601,23 +659,17 @@ const SuperDocTemplateBuilder = forwardRef<
     async (config?: Types.ExportConfig): Promise<void | Blob> => {
       const { fileName = "document", triggerDownload = true } = config || {};
 
-      try {
-        const result = await superdocRef.current?.export({
-          exportType: ["docx"],
-          exportedName: fileName,
-          triggerDownload,
-        });
+      const result = await superdocRef.current?.export({
+        exportType: ["docx"],
+        exportedName: fileName,
+        triggerDownload,
+      });
 
-        return result;
-      } catch (error) {
-        console.error("Failed to export DOCX", error);
-        throw error;
-      }
+      return result;
     },
     [],
   );
 
-  // Imperative handle
   useImperativeHandle(ref, () => ({
     insertField: (field) => insertFieldInternal("inline", field),
     insertBlockField: (field) => insertFieldInternal("block", field),
@@ -628,9 +680,9 @@ const SuperDocTemplateBuilder = forwardRef<
     previousField,
     getFields: () => templateFields,
     exportTemplate,
+    getSuperDoc: () => superdocRef.current,
   }));
 
-  // Components
   const MenuComponent = menu.component || FieldMenu;
   const ListComponent = list.component || FieldList;
 
@@ -642,7 +694,6 @@ const SuperDocTemplateBuilder = forwardRef<
       style={style}
     >
       <div style={{ display: "flex", gap: "20px" }}>
-        {/* Field List (if left) */}
         {list.position === "left" && (
           <div className="superdoc-template-builder-sidebar">
             <ListComponent
@@ -655,7 +706,6 @@ const SuperDocTemplateBuilder = forwardRef<
           </div>
         )}
 
-        {/* Document */}
         <div className="superdoc-template-builder-document" style={{ flex: 1 }}>
           {toolbarSettings?.renderDefaultContainer && (
             <div
@@ -672,7 +722,6 @@ const SuperDocTemplateBuilder = forwardRef<
           />
         </div>
 
-        {/* Field List (if right) */}
         {list.position === "right" && (
           <div className="superdoc-template-builder-sidebar">
             <ListComponent
@@ -686,7 +735,6 @@ const SuperDocTemplateBuilder = forwardRef<
         )}
       </div>
 
-      {/* Field Menu */}
       <MenuComponent
         isVisible={menuVisible}
         position={menuPosition}
@@ -697,6 +745,8 @@ const SuperDocTemplateBuilder = forwardRef<
         onSelect={handleMenuSelect}
         onClose={handleMenuClose}
         onCreateField={onFieldCreate}
+        existingFields={templateFields}
+        onSelectExisting={handleSelectExisting}
       />
     </div>
   );

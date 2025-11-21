@@ -9,24 +9,13 @@ import "superdoc/dist/style.css";
 import "./App.css";
 
 const availableFields: FieldDefinition[] = [
-  // Agreement
-  { id: '1242142770', label: 'Agreement Date', category: 'Agreement' },
-
-  // Parties
-  { id: '1242142771', label: 'User Name', category: 'Parties' },
-  { id: '1242142772', label: 'Company Name', category: 'Parties' },
-
-  // Scope
-  { id: '1242142773', label: 'Service Type', category: 'Scope' },
-
-  // Legal
-  { id: '1242142774', label: 'Agreement Jurisdiction', category: 'Legal' },
-
-  // Company Details
-  { id: '1242142775', label: 'Company Address', category: 'Company' },
-
-  // Signatures
-  { id: '1242142776', label: 'Signature', category: 'Signatures' },
+  { id: '1242142770', label: 'Agreement Date' },
+  { id: '1242142771', label: 'User Name' },
+  { id: '1242142772', label: 'Company Name' },
+  { id: '1242142773', label: 'Service Type' },
+  { id: '1242142774', label: 'Agreement Jurisdiction' },
+  { id: '1242142775', label: 'Company Address' },
+  { id: '1242142776', label: 'Signature' },
 ];
 
 export function App() {
