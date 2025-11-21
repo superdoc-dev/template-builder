@@ -2,7 +2,7 @@ name: Deploy Demo
 
 on:
   push:
-    branches: [stable]
+    branches: [main]
     paths:
       - "demo/**"
       - "!**.md"
