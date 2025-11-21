@@ -60,7 +60,8 @@ const areTemplateFieldsEqual = (
       left.alias !== right.alias ||
       left.tag !== right.tag ||
       left.position !== right.position ||
-      left.mode !== right.mode
+      left.mode !== right.mode ||
+      left.group !== right.group
     ) {
       return false;
     }
