@@ -414,7 +414,7 @@ const SuperDocTemplateBuilder = forwardRef<
                     if (!editor) return;
                     const currentPos = editor.state.selection.from;
                     const tr = editor.state.tr.delete(triggerStart, currentPos);
-                    editor.view.dispatch(tr);
+                    (editor as any).view.dispatch(tr);
                   };
 
                   triggerCleanupRef.current = cleanup;
@@ -628,6 +628,7 @@ const SuperDocTemplateBuilder = forwardRef<
     previousField,
     getFields: () => templateFields,
     exportTemplate,
+    getSuperDoc: () => superdocRef.current,
   }));
 
   // Components

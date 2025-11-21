@@ -135,4 +135,14 @@ export interface SuperDocTemplateBuilderHandle {
   previousField: () => void;
   getFields: () => TemplateField[];
   exportTemplate: (config?: ExportConfig) => Promise<void | Blob>;
+  /**
+   * Returns the SuperDoc instance.
+   * Use this to access the full SuperDoc API, including:
+   * - The active editor: `getSuperDoc()?.activeEditor`
+   * - Editor commands: `getSuperDoc()?.activeEditor?.commands.*`
+   * - Editor state and helpers: `getSuperDoc()?.activeEditor?.state`
+   *
+   * Note: Full TypeScript types for SuperDoc will be available in a future update.
+   */
+  getSuperDoc: () => SuperDoc | null;
 }
