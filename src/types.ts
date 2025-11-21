@@ -3,9 +3,9 @@ import type { SuperDoc } from "superdoc"; // eslint-disable-line
 export interface FieldDefinition {
   id: string;
   label: string;
-  category?: string;
   defaultValue?: string;
   metadata?: Record<string, any>;
+  group?: string;
 }
 
 export interface TemplateField {
@@ -14,6 +14,7 @@ export interface TemplateField {
   tag?: string;
   position?: number;
   mode?: "inline" | "block";
+  group?: string;
 }
 
 export interface TriggerEvent {
@@ -34,6 +35,8 @@ export interface FieldMenuProps {
   onCreateField?: (
     field: FieldDefinition,
   ) => void | Promise<FieldDefinition | void>;
+  existingFields?: TemplateField[];
+  onSelectExisting?: (field: TemplateField) => void;
 }
 
 export interface FieldListProps {
