@@ -3,9 +3,9 @@ import type { SuperDoc } from "superdoc"; // eslint-disable-line
 export interface FieldDefinition {
   id: string;
   label: string;
-  category?: string;
   defaultValue?: string;
   metadata?: Record<string, any>;
+  group?: string;
 }
 
 export interface TemplateField {
@@ -14,6 +14,7 @@ export interface TemplateField {
   tag?: string;
   position?: number;
   mode?: "inline" | "block";
+  group?: string;
 }
 
 export interface TriggerEvent {
@@ -34,6 +35,8 @@ export interface FieldMenuProps {
   onCreateField?: (
     field: FieldDefinition,
   ) => void | Promise<FieldDefinition | void>;
+  existingFields?: TemplateField[];
+  onSelectExisting?: (field: TemplateField) => void;
 }
 
 export interface FieldListProps {
@@ -135,4 +138,14 @@ export interface SuperDocTemplateBuilderHandle {
   previousField: () => void;
   getFields: () => TemplateField[];
   exportTemplate: (config?: ExportConfig) => Promise<void | Blob>;
+  /**
+   * Returns the SuperDoc instance.
+   * Use this to access the full SuperDoc API, including:
+   * - The active editor: `getSuperDoc()?.activeEditor`
+   * - Editor commands: `getSuperDoc()?.activeEditor?.commands.*`
+   * - Editor state and helpers: `getSuperDoc()?.activeEditor?.state`
+   *
+   * Note: Full TypeScript types for SuperDoc will be available in a future update.
+   */
+  getSuperDoc: () => SuperDoc | null;
 }
