@@ -1,3 +1,18 @@
+# [0.3.0](https://github.com/superdoc-dev/template-builder/compare/v0.2.0...v0.3.0) (2025-11-21)
+
+
+### Bug Fixes
+
+* add deduplication for React dependencies in Vite config and clean up package.json ([dc17f23](https://github.com/superdoc-dev/template-builder/commit/dc17f23762b88e336e6a4d3bc49b41dfa549f079))
+* add missing deployment ID in GitHub Pages workflow ([e350b3b](https://github.com/superdoc-dev/template-builder/commit/e350b3b5f47f2cdafb547d2b3d22047886e6751e))
+* update SuperDoc initialization with document mode and enhance Vite config external dependencies ([9e0989a](https://github.com/superdoc-dev/template-builder/commit/9e0989aab7f02acd0e5d743eb1e1b340970edf9d))
+
+
+### Features
+
+* add getSuperDoc method for accessing SuperDoc API ([#18](https://github.com/superdoc-dev/template-builder/issues/18)) ([ccda4e0](https://github.com/superdoc-dev/template-builder/commit/ccda4e0900f633d58db6bb00f1f7d8359986fcac))
+* enhance field management with grouping and improved UI ([#19](https://github.com/superdoc-dev/template-builder/issues/19)) ([a64e8b8](https://github.com/superdoc-dev/template-builder/commit/a64e8b8658aecbd9c11015b9807b110aa057064d))
+
 # [0.2.0](https://github.com/superdoc-dev/template-builder/compare/v0.1.0...v0.2.0) (2025-11-13)
 
 
