@@ -137,6 +137,7 @@ const SuperDocTemplateBuilder = forwardRef<
     onFieldsChange,
     onFieldSelect,
     onFieldCreate,
+    onExport,
     className,
     style,
     documentHeight = "600px",
@@ -666,9 +667,16 @@ const SuperDocTemplateBuilder = forwardRef<
         triggerDownload,
       });
 
+      const editor = superdocRef.current?.activeEditor;
+      if (editor) {
+        const fields = getTemplateFieldsFromEditor(editor);
+        const blob = triggerDownload ? undefined : (result as Blob);
+        onExport?.({ fields, blob, fileName });
+      }
+
       return result;
     },
-    [],
+    [onExport],
   );
 
   useImperativeHandle(ref, () => ({
