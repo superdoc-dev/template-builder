@@ -65,7 +65,8 @@ jobs:
               echo "Main is already up to date with stable; skipping PR."
               exit 0
             fi
-            pr_number=$(gh pr create --base main --head stable --title "chore: sync stable release to main" --body "Automated PR to merge the latest stable changes back into main." --json number --jq '.number')
+            pr_url=$(gh pr create --base main --head stable --title "chore: sync stable release to main" --body "Automated PR to merge the latest stable changes back into main.")
+            pr_number=$(echo "$pr_url" | grep -oE '[0-9]+$')
             echo "Created PR #$pr_number to sync stable into main."
           else
             echo "PR #$pr_number already open to sync stable into main."
