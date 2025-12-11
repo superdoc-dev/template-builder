@@ -23,6 +23,12 @@ export interface TriggerEvent {
   cleanup: () => void;
 }
 
+export interface ExportEvent {
+  fields: TemplateField[];
+  blob?: Blob;
+  fileName: string;
+}
+
 export interface FieldMenuProps {
   isVisible: boolean;
   position?: DOMRect;
@@ -116,6 +122,7 @@ export interface SuperDocTemplateBuilderProps {
   onFieldCreate?: (
     field: FieldDefinition,
   ) => void | Promise<FieldDefinition | void>;
+  onExport?: (event: ExportEvent) => void;
 
   // UI
   className?: string;
