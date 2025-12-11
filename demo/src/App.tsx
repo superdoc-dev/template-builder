@@ -1,12 +1,13 @@
-import React, { useState, useRef, useCallback, useMemo } from "react";
-import SuperDocTemplateBuilder from "@superdoc-dev/template-builder";
+import React, { useState, useRef, useCallback, useMemo } from 'react';
+import SuperDocTemplateBuilder from '@superdoc-dev/template-builder';
 import type {
   SuperDocTemplateBuilderHandle,
   TemplateField,
   FieldDefinition,
-} from "@superdoc-dev/template-builder";
-import "superdoc/dist/style.css";
-import "./App.css";
+  ExportEvent,
+} from '@superdoc-dev/template-builder';
+import 'superdoc/style.css';
+import './App.css';
 
 const availableFields: FieldDefinition[] = [
   { id: '1242142770', label: 'Agreement Date' },
@@ -19,13 +20,13 @@ const availableFields: FieldDefinition[] = [
 ];
 
 export function App() {
-  const [fields, setFields] = useState<TemplateField[]>([]);
+  const [, setFields] = useState<TemplateField[]>([]);
   const [events, setEvents] = useState<string[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [documentSource, setDocumentSource] = useState<string | File>(
-    "https://storage.googleapis.com/public_static_hosting/public_demo_docs/new_service_agreement.docx",
+    'https://storage.googleapis.com/public_static_hosting/public_demo_docs/new_service_agreement.docx',
   );
   const builderRef = useRef<SuperDocTemplateBuilderHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -34,27 +35,39 @@ export function App() {
   const log = useCallback((msg: string) => {
     const time = new Date().toLocaleTimeString();
     console.log(`[${time}] ${msg}`);
-    setEvents(prev => [...prev.slice(-4), `${time} - ${msg}`]);
+    setEvents((prev) => [...prev.slice(-4), `${time} - ${msg}`]);
   }, []);
 
-  const handleFieldsChange = useCallback((updatedFields: TemplateField[]) => {
-    setFields(updatedFields);
-    log(`Fields: ${updatedFields.length} total`);
-  }, [log]);
+  const handleFieldsChange = useCallback(
+    (updatedFields: TemplateField[]) => {
+      setFields(updatedFields);
+      log(`Fields: ${updatedFields.length} total`);
+    },
+    [log],
+  );
 
-  const handleFieldInsert = useCallback((field: TemplateField) => {
-    log(`✓ Inserted: ${field.alias}`);
-  }, [log]);
+  const handleFieldInsert = useCallback(
+    (field: TemplateField) => {
+      log(`✓ Inserted: ${field.alias}`);
+    },
+    [log],
+  );
 
-  const handleFieldDelete = useCallback((fieldId: string | number) => {
-    log(`✗ Deleted: ${fieldId}`);
-  }, [log]);
+  const handleFieldDelete = useCallback(
+    (fieldId: string | number) => {
+      log(`✗ Deleted: ${fieldId}`);
+    },
+    [log],
+  );
 
-  const handleFieldSelect = useCallback((field: TemplateField | null) => {
-    if (field) {
-      log(`Selected: ${field.alias}`);
-    }
-  }, [log]);
+  const handleFieldSelect = useCallback(
+    (field: TemplateField | null) => {
+      if (field) {
+        log(`Selected: ${field.alias}`);
+      }
+    },
+    [log],
+  );
 
   const handleReady = useCallback(() => {
     log('✓ Template builder ready');
@@ -70,6 +83,18 @@ export function App() {
     log('⌨ Trigger detected');
   }, [log]);
 
+  const handleExport = useCallback(
+    (event: ExportEvent) => {
+      console.log('Export Event:', event);
+      console.log('Fields:', JSON.stringify(event.fields, null, 2));
+      log(`Exported ${event.fields.length} fields`);
+      event.fields.forEach((f) => {
+        console.log(`  - ${f.alias} (id: ${f.id}, mode: ${f.mode}, group: ${f.group || 'none'})`);
+      });
+    },
+    [log],
+  );
+
   const handleExportTemplate = useCallback(async () => {
     if (!builderRef.current) {
       return;
@@ -79,13 +104,13 @@ export function App() {
       setIsDownloading(true);
 
       await builderRef.current.exportTemplate({
-        fileName: "template.docx",
+        fileName: 'template.docx',
       });
 
-      log("📤 Template exported");
+      log('📤 Template exported');
     } catch (error) {
-      log("⚠️ Export failed");
-      console.error("Failed to export template", error);
+      log('⚠️ Export failed');
+      console.error('Failed to export template', error);
     } finally {
       setIsDownloading(false);
     }
@@ -102,45 +127,57 @@ export function App() {
     }
   };
 
-  const documentConfig = useMemo(() => ({
-    source: documentSource,
-    mode: 'editing' as const
-  }), [documentSource]);
+  const documentConfig = useMemo(
+    () => ({
+      source: documentSource,
+      mode: 'editing' as const,
+    }),
+    [documentSource],
+  );
 
   const handleImportButtonClick = useCallback(() => {
     if (isImporting) return;
     fileInputRef.current?.click();
   }, [isImporting]);
 
-  const handleFileInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    event.target.value = "";
+  const handleFileInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      event.target.value = '';
 
-    if (!file) return;
+      if (!file) return;
 
-    const extension = file.name.split('.').pop()?.toLowerCase();
-    if (extension !== 'docx') {
-      const message = 'Invalid file type. Please choose a .docx file.';
-      setImportError(message);
-      log('⚠️ ' + message);
-      return;
-    }
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      if (extension !== 'docx') {
+        const message = 'Invalid file type. Please choose a .docx file.';
+        setImportError(message);
+        log('⚠️ ' + message);
+        return;
+      }
 
-    importingRef.current = true;
-    setImportError(null);
-    setIsImporting(true);
-    setDocumentSource(file);
-    log(`📥 Importing "${file.name}"`);
-  }, [log]);
+      importingRef.current = true;
+      setImportError(null);
+      setIsImporting(true);
+      setDocumentSource(file);
+      log(`📥 Importing "${file.name}"`);
+    },
+    [log],
+  );
 
-  const fieldsConfig = useMemo(() => ({
-    available: availableFields,
-    allowCreate: true
-  }), []);
+  const fieldsConfig = useMemo(
+    () => ({
+      available: availableFields,
+      allowCreate: true,
+    }),
+    [],
+  );
 
-  const listConfig = useMemo(() => ({
-    position: 'right' as const
-  }), []);
+  const listConfig = useMemo(
+    () => ({
+      position: 'right' as const,
+    }),
+    [],
+  );
 
   return (
     <div className="demo" onKeyDown={handleKeyDown}>
@@ -148,16 +185,27 @@ export function App() {
         <div className="header-content">
           <div className="header-left">
             <h1>
-              <a href="https://www.npmjs.com/package/@superdoc-dev/template-builder" target="_blank" rel="noopener">
+              <a
+                href="https://www.npmjs.com/package/@superdoc-dev/template-builder"
+                target="_blank"
+                rel="noopener"
+              >
                 @superdoc-dev/template-builder
               </a>
             </h1>
             <p>
-              React template builder from <a href="https://superdoc.dev" target="_blank" rel="noopener">SuperDoc</a>
+              React template builder from{' '}
+              <a href="https://superdoc.dev" target="_blank" rel="noopener">
+                SuperDoc
+              </a>
             </p>
           </div>
           <div className="header-nav">
-            <a href="https://github.com/superdoc-dev/template-builder" target="_blank" rel="noopener">
+            <a
+              href="https://github.com/superdoc-dev/template-builder"
+              target="_blank"
+              rel="noopener"
+            >
               GitHub
             </a>
             <a href="https://docs.superdoc.dev" target="_blank" rel="noopener">
@@ -170,7 +218,7 @@ export function App() {
       <div className="container">
         <div className="toolbar">
           <div className="toolbar-left">
-            <span className="hint">Type {'{{'}  to insert a field</span>
+            <span className="hint">Type {'{{'} to insert a field</span>
             <span className="divider">|</span>
             <span className="hint">Tab/Shift+Tab to navigate</span>
           </div>
@@ -194,7 +242,7 @@ export function App() {
               className="export-button"
               disabled={isDownloading || isImporting}
             >
-              {isDownloading ? "Exporting..." : "Export Template"}
+              {isDownloading ? 'Exporting...' : 'Export Template'}
             </button>
           </div>
         </div>
@@ -217,6 +265,7 @@ export function App() {
           onFieldDelete={handleFieldDelete}
           onFieldSelect={handleFieldSelect}
           onFieldsChange={handleFieldsChange}
+          onExport={handleExport}
           documentHeight="600px"
         />
 
@@ -225,11 +274,12 @@ export function App() {
           <div className="event-log">
             <div className="event-log-header">EVENT LOG</div>
             {events.map((evt, i) => (
-              <div key={i} className="event-log-item">{evt}</div>
+              <div key={i} className="event-log-item">
+                {evt}
+              </div>
             ))}
           </div>
         )}
-
       </div>
     </div>
   );

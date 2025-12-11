@@ -1,4 +1,4 @@
-import type { SuperDoc } from "superdoc"; // eslint-disable-line
+import type { SuperDoc } from 'superdoc';
 
 export interface FieldDefinition {
   id: string;
@@ -13,7 +13,7 @@ export interface TemplateField {
   alias: string;
   tag?: string;
   position?: number;
-  mode?: "inline" | "block";
+  mode?: 'inline' | 'block';
   group?: string;
 }
 
@@ -21,6 +21,12 @@ export interface TriggerEvent {
   position: { from: number; to: number };
   bounds?: DOMRect;
   cleanup: () => void;
+}
+
+export interface ExportEvent {
+  fields: TemplateField[];
+  blob?: Blob;
+  fileName: string;
 }
 
 export interface FieldMenuProps {
@@ -32,9 +38,7 @@ export interface FieldMenuProps {
   allowCreate?: boolean;
   onSelect: (field: FieldDefinition) => void;
   onClose: () => void;
-  onCreateField?: (
-    field: FieldDefinition,
-  ) => void | Promise<FieldDefinition | void>;
+  onCreateField?: (field: FieldDefinition) => void | Promise<FieldDefinition | void>;
   existingFields?: TemplateField[];
   onSelectExisting?: (field: TemplateField) => void;
 }
@@ -49,7 +53,7 @@ export interface FieldListProps {
 
 export interface DocumentConfig {
   source?: string | File | Blob;
-  mode?: "editing" | "viewing";
+  mode?: 'editing' | 'viewing';
 }
 
 export interface FieldsConfig {
@@ -65,7 +69,7 @@ export interface MenuConfig {
 
 export interface ListConfig {
   component?: React.ComponentType<FieldListProps>;
-  position?: "left" | "right";
+  position?: 'left' | 'right';
 }
 
 export interface ToolbarConfig {
@@ -113,9 +117,8 @@ export interface SuperDocTemplateBuilderProps {
   onFieldDelete?: (fieldId: string | number) => void;
   onFieldsChange?: (fields: TemplateField[]) => void;
   onFieldSelect?: (field: TemplateField | null) => void;
-  onFieldCreate?: (
-    field: FieldDefinition,
-  ) => void | Promise<FieldDefinition | void>;
+  onFieldCreate?: (field: FieldDefinition) => void | Promise<FieldDefinition | void>;
+  onExport?: (event: ExportEvent) => void;
 
   // UI
   className?: string;
@@ -125,13 +128,8 @@ export interface SuperDocTemplateBuilderProps {
 
 export interface SuperDocTemplateBuilderHandle {
   insertField: (field: Partial<FieldDefinition> & { alias: string }) => boolean;
-  insertBlockField: (
-    field: Partial<FieldDefinition> & { alias: string },
-  ) => boolean;
-  updateField: (
-    id: string | number,
-    updates: Partial<TemplateField>,
-  ) => boolean;
+  insertBlockField: (field: Partial<FieldDefinition> & { alias: string }) => boolean;
+  updateField: (id: string | number, updates: Partial<TemplateField>) => boolean;
   deleteField: (id: string | number) => boolean;
   selectField: (id: string | number) => void;
   nextField: () => void;
