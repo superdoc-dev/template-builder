@@ -1,40 +1,31 @@
-import {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  forwardRef,
-  useImperativeHandle,
-} from "react";
-import type { SuperDoc } from "superdoc";
-import type * as Types from "./types";
-import { FieldMenu, FieldList } from "./defaults";
+import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import type { SuperDoc } from 'superdoc';
+import type * as Types from './types';
+import { FieldMenu, FieldList } from './defaults';
 
-export * from "./types";
+export * from './types';
 export { FieldMenu, FieldList };
 
-type Editor = NonNullable<SuperDoc["activeEditor"]>;
+type Editor = NonNullable<SuperDoc['activeEditor']>;
 
 const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
-  const structuredContentHelpers = (editor.helpers as any)
-    ?.structuredContentCommands;
+  const structuredContentHelpers = (editor.helpers as any)?.structuredContentCommands;
 
   if (!structuredContentHelpers?.getStructuredContentTags) {
     return [];
   }
 
-  const tags =
-    structuredContentHelpers.getStructuredContentTags(editor.state) || [];
+  const tags = structuredContentHelpers.getStructuredContentTags(editor.state) || [];
 
   return tags.map((entry: any) => {
     const node = entry?.node ?? entry;
     const attrs = node?.attrs ?? {};
-    const nodeType = node?.type?.name || "";
-    const mode = nodeType.includes("Block") ? "block" : "inline";
+    const nodeType = node?.type?.name || '';
+    const mode = nodeType.includes('Block') ? 'block' : 'inline';
 
     return {
       id: attrs.id,
-      alias: attrs.alias || attrs.label || "",
+      alias: attrs.alias || attrs.label || '',
       tag: attrs.tag,
       mode,
       group: structuredContentHelpers.getGroup?.(attrs.tag) ?? undefined,
@@ -42,10 +33,7 @@ const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
   });
 };
 
-const areTemplateFieldsEqual = (
-  a: Types.TemplateField[],
-  b: Types.TemplateField[],
-): boolean => {
+const areTemplateFieldsEqual = (a: Types.TemplateField[], b: Types.TemplateField[]): boolean => {
   if (a === b) return true;
   if (a.length !== b.length) return false;
 
@@ -70,30 +58,28 @@ const areTemplateFieldsEqual = (
   return true;
 };
 
-const resolveToolbar = (
-  toolbar: Types.SuperDocTemplateBuilderProps["toolbar"],
-) => {
+const resolveToolbar = (toolbar: Types.SuperDocTemplateBuilderProps['toolbar']) => {
   if (!toolbar) return null;
 
   if (toolbar === true) {
     return {
-      selector: "#superdoc-toolbar",
-      config: {} as Omit<Types.ToolbarConfig, "selector">,
+      selector: '#superdoc-toolbar',
+      config: {} as Omit<Types.ToolbarConfig, 'selector'>,
       renderDefaultContainer: true,
     };
   }
 
-  if (typeof toolbar === "string") {
+  if (typeof toolbar === 'string') {
     return {
       selector: toolbar,
-      config: {} as Omit<Types.ToolbarConfig, "selector">,
+      config: {} as Omit<Types.ToolbarConfig, 'selector'>,
       renderDefaultContainer: false,
     };
   }
 
   const { selector, ...config } = toolbar;
   return {
-    selector: selector || "#superdoc-toolbar",
+    selector: selector || '#superdoc-toolbar',
     config,
     renderDefaultContainer: selector === undefined,
   };
@@ -105,8 +91,7 @@ const MENU_APPROX_HEIGHT = 300;
 
 const clampToViewport = (rect: DOMRect): DOMRect => {
   const maxLeft = window.innerWidth - MENU_APPROX_WIDTH - MENU_VIEWPORT_PADDING;
-  const maxTop =
-    window.innerHeight - MENU_APPROX_HEIGHT - MENU_VIEWPORT_PADDING;
+  const maxTop = window.innerHeight - MENU_APPROX_HEIGHT - MENU_VIEWPORT_PADDING;
 
   const clampedLeft = Math.min(rect.left, maxLeft);
   const clampedTop = Math.min(rect.top, maxTop);
@@ -140,21 +125,17 @@ const SuperDocTemplateBuilder = forwardRef<
     onExport,
     className,
     style,
-    documentHeight = "600px",
+    documentHeight = '600px',
   } = props;
 
-  const [templateFields, setTemplateFields] = useState<Types.TemplateField[]>(
-    fields.initial || [],
-  );
-  const [selectedFieldId, setSelectedFieldId] = useState<
-    string | number | null
-  >(null);
+  const [templateFields, setTemplateFields] = useState<Types.TemplateField[]>(fields.initial || []);
+  const [selectedFieldId, setSelectedFieldId] = useState<string | number | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPosition, setMenuPosition] = useState<DOMRect | undefined>();
-  const [menuQuery, setMenuQuery] = useState<string>("");
-  const [menuFilteredFields, setMenuFilteredFields] = useState<
-    Types.FieldDefinition[]
-  >(() => fields.available || []);
+  const [menuQuery, setMenuQuery] = useState<string>('');
+  const [menuFilteredFields, setMenuFilteredFields] = useState<Types.FieldDefinition[]>(
+    () => fields.available || [],
+  );
 
   const containerRef = useRef<HTMLDivElement>(null);
   const superdocRef = useRef<SuperDoc | null>(null);
@@ -168,7 +149,7 @@ const SuperDocTemplateBuilder = forwardRef<
     menuVisibleRef.current = menuVisible;
   }, [menuVisible]);
 
-  const trigger = menu.trigger || "{{";
+  const trigger = menu.trigger || '{{';
 
   const availableFields = fieldsRef.current.available || [];
 
@@ -194,12 +175,12 @@ const SuperDocTemplateBuilder = forwardRef<
   );
 
   const resetMenuFilter = useCallback(() => {
-    updateMenuFilter("");
+    updateMenuFilter('');
   }, [updateMenuFilter]);
 
   const insertFieldInternal = useCallback(
     (
-      mode: "inline" | "block",
+      mode: 'inline' | 'block',
       field: Partial<Types.FieldDefinition> & { alias: string },
     ): boolean => {
       if (!superdocRef.current?.activeEditor) return false;
@@ -208,22 +189,18 @@ const SuperDocTemplateBuilder = forwardRef<
       const previousFields = templateFields;
 
       const success =
-        mode === "inline"
+        mode === 'inline'
           ? editor.commands.insertStructuredContentInline?.({
               attrs: {
                 alias: field.alias,
-                tag: field.metadata
-                  ? JSON.stringify(field.metadata)
-                  : undefined,
+                tag: field.metadata ? JSON.stringify(field.metadata) : undefined,
               },
               text: field.defaultValue || field.alias,
             })
           : editor.commands.insertStructuredContentBlock?.({
               attrs: {
                 alias: field.alias,
-                tag: field.metadata
-                  ? JSON.stringify(field.metadata)
-                  : undefined,
+                tag: field.metadata ? JSON.stringify(field.metadata) : undefined,
               },
               text: field.defaultValue || field.alias,
             });
@@ -235,8 +212,7 @@ const SuperDocTemplateBuilder = forwardRef<
         onFieldsChange?.(updatedFields);
 
         const insertedField = updatedFields.find(
-          (candidate) =>
-            !previousFields.some((existing) => existing.id === candidate.id),
+          (candidate) => !previousFields.some((existing) => existing.id === candidate.id),
         );
 
         if (insertedField) {
@@ -260,9 +236,7 @@ const SuperDocTemplateBuilder = forwardRef<
 
       if (success) {
         setTemplateFields((prev) => {
-          const updated = prev.map((f) =>
-            f.id === id ? { ...f, ...updates } : f,
-          );
+          const updated = prev.map((f) => (f.id === id ? { ...f, ...updates } : f));
           onFieldsChange?.(updated);
           const field = updated.find((f) => f.id === id);
           if (field) onFieldUpdate?.(field);
@@ -303,8 +277,7 @@ const SuperDocTemplateBuilder = forwardRef<
 
       let commandResult = false;
       try {
-        commandResult =
-          editor.commands.deleteStructuredContentById?.(id) ?? false;
+        commandResult = editor.commands.deleteStructuredContentById?.(id) ?? false;
       } catch {
         commandResult = false;
       }
@@ -317,9 +290,7 @@ const SuperDocTemplateBuilder = forwardRef<
       }
 
       if (groupId) {
-        const remainingFieldsInGroup = documentFields.filter(
-          (field) => field.group === groupId,
-        );
+        const remainingFieldsInGroup = documentFields.filter((field) => field.group === groupId);
 
         if (remainingFieldsInGroup.length === 1) {
           const lastField = remainingFieldsInGroup[0];
@@ -394,17 +365,17 @@ const SuperDocTemplateBuilder = forwardRef<
     if (!containerRef.current) return;
 
     const initSuperDoc = async () => {
-      const { SuperDoc } = await import("superdoc");
+      const { SuperDoc } = await import('superdoc');
 
       const config: Record<string, unknown> = {
         selector: containerRef.current!,
         document: document?.source,
-        documentMode: document?.mode || "editing",
+        documentMode: document?.mode || 'editing',
         onReady: () => {
           if (instance.activeEditor) {
             const editor = instance.activeEditor;
 
-            editor.on("update", ({ editor: e }: any) => {
+            editor.on('update', ({ editor: e }: any) => {
               const { state } = e;
               const { from } = state.selection;
 
@@ -414,9 +385,7 @@ const SuperDocTemplateBuilder = forwardRef<
 
                 if (text === trigger) {
                   const coords = e.view.coordsAtPos(from);
-                  const bounds = clampToViewport(
-                    new DOMRect(coords.left, coords.top, 0, 0),
-                  );
+                  const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
 
                   const cleanup = () => {
                     const editor = superdocRef.current?.activeEditor;
@@ -459,20 +428,15 @@ const SuperDocTemplateBuilder = forwardRef<
                 return;
               }
 
-              const queryText = state.doc.textBetween(
-                menuTriggerFromRef.current,
-                from,
-              );
+              const queryText = state.doc.textBetween(menuTriggerFromRef.current, from);
               updateMenuFilter(queryText);
 
               const coords = e.view.coordsAtPos(from);
-              const bounds = clampToViewport(
-                new DOMRect(coords.left, coords.top, 0, 0),
-              );
+              const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
               setMenuPosition(bounds);
             });
 
-            editor.on("update", () => {
+            editor.on('update', () => {
               discoverFields(editor);
             });
 
@@ -485,14 +449,14 @@ const SuperDocTemplateBuilder = forwardRef<
 
       const instance = new SuperDoc({
         selector: containerRef.current!,
-        documentMode: document?.mode || "editing",
+        documentMode: document?.mode || 'editing',
         ...config,
         ...(toolbarSettings && {
           toolbar: toolbarSettings.selector,
           modules: {
             toolbar: {
               selector: toolbarSettings.selector,
-              toolbarGroups: toolbarSettings.config.toolbarGroups || ["center"],
+              toolbarGroups: toolbarSettings.config.toolbarGroups || ['center'],
               excludeItems: toolbarSettings.config.excludeItems || [],
               ...toolbarSettings.config,
             },
@@ -511,21 +475,13 @@ const SuperDocTemplateBuilder = forwardRef<
 
       const instance = superdocRef.current;
 
-      if (instance && typeof instance.destroy === "function") {
+      if (instance && typeof instance.destroy === 'function') {
         instance.destroy();
       }
 
       superdocRef.current = null;
     };
-  }, [
-    document?.source,
-    document?.mode,
-    trigger,
-    discoverFields,
-    onReady,
-    onTrigger,
-    toolbar,
-  ]);
+  }, [document?.source, document?.mode, trigger, discoverFields, onReady, onTrigger, toolbar]);
 
   const handleMenuSelect = useCallback(
     async (field: Types.FieldDefinition) => {
@@ -536,14 +492,13 @@ const SuperDocTemplateBuilder = forwardRef<
       menuTriggerFromRef.current = null;
       resetMenuFilter();
 
-      const mode = (field.metadata?.mode as "inline" | "block") || "inline";
+      const mode = (field.metadata?.mode as 'inline' | 'block') || 'inline';
 
-      if (field.id.startsWith("custom_") && onFieldCreate) {
+      if (field.id.startsWith('custom_') && onFieldCreate) {
         const createdField = await onFieldCreate(field);
 
         if (createdField) {
-          const createdMode =
-            (createdField.metadata?.mode as "inline" | "block") || mode;
+          const createdMode = (createdField.metadata?.mode as 'inline' | 'block') || mode;
           insertFieldInternal(createdMode, {
             alias: createdField.label,
             metadata: createdField.metadata,
@@ -576,23 +531,21 @@ const SuperDocTemplateBuilder = forwardRef<
       const editor = superdocRef.current?.activeEditor;
       if (!editor) return;
 
-      const structuredContentHelpers = (editor.helpers as any)
-        ?.structuredContentCommands;
+      const structuredContentHelpers = (editor.helpers as any)?.structuredContentCommands;
 
       if (!structuredContentHelpers) return;
 
       const groupId =
-        field.group ||
-        `group-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+        field.group || `group-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
       const tagWithGroup = structuredContentHelpers.createTagObject?.({
         group: groupId,
       });
 
-      const mode = field.mode || "inline";
+      const mode = field.mode || 'inline';
 
       const success =
-        mode === "inline"
+        mode === 'inline'
           ? editor.commands.insertStructuredContentInline?.({
               attrs: {
                 alias: field.alias,
@@ -634,35 +587,27 @@ const SuperDocTemplateBuilder = forwardRef<
   }, [resetMenuFilter]);
 
   const nextField = useCallback(() => {
-    if (!superdocRef.current?.activeEditor || templateFields.length === 0)
-      return;
+    if (!superdocRef.current?.activeEditor || templateFields.length === 0) return;
 
-    const currentIndex = templateFields.findIndex(
-      (f) => f.id === selectedFieldId,
-    );
-    const nextIndex =
-      currentIndex >= 0 ? (currentIndex + 1) % templateFields.length : 0;
+    const currentIndex = templateFields.findIndex((f) => f.id === selectedFieldId);
+    const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % templateFields.length : 0;
     selectField(templateFields[nextIndex].id);
   }, [templateFields, selectedFieldId, selectField]);
 
   const previousField = useCallback(() => {
-    if (!superdocRef.current?.activeEditor || templateFields.length === 0)
-      return;
+    if (!superdocRef.current?.activeEditor || templateFields.length === 0) return;
 
-    const currentIndex = templateFields.findIndex(
-      (f) => f.id === selectedFieldId,
-    );
-    const prevIndex =
-      currentIndex > 0 ? currentIndex - 1 : templateFields.length - 1;
+    const currentIndex = templateFields.findIndex((f) => f.id === selectedFieldId);
+    const prevIndex = currentIndex > 0 ? currentIndex - 1 : templateFields.length - 1;
     selectField(templateFields[prevIndex].id);
   }, [templateFields, selectedFieldId, selectField]);
 
   const exportTemplate = useCallback(
     async (config?: Types.ExportConfig): Promise<void | Blob> => {
-      const { fileName = "document", triggerDownload = true } = config || {};
+      const { fileName = 'document', triggerDownload = true } = config || {};
 
       const result = await superdocRef.current?.export({
-        exportType: ["docx"],
+        exportType: ['docx'],
         exportedName: fileName,
         triggerDownload,
       });
@@ -680,8 +625,8 @@ const SuperDocTemplateBuilder = forwardRef<
   );
 
   useImperativeHandle(ref, () => ({
-    insertField: (field) => insertFieldInternal("inline", field),
-    insertBlockField: (field) => insertFieldInternal("block", field),
+    insertField: (field) => insertFieldInternal('inline', field),
+    insertBlockField: (field) => insertFieldInternal('block', field),
     updateField,
     deleteField,
     selectField,
@@ -698,12 +643,9 @@ const SuperDocTemplateBuilder = forwardRef<
   const toolbarSettings = resolveToolbar(toolbar);
 
   return (
-    <div
-      className={`superdoc-template-builder ${className || ""}`}
-      style={style}
-    >
-      <div style={{ display: "flex", gap: "20px" }}>
-        {list.position === "left" && (
+    <div className={`superdoc-template-builder ${className || ''}`} style={style}>
+      <div style={{ display: 'flex', gap: '20px' }}>
+        {list.position === 'left' && (
           <div className="superdoc-template-builder-sidebar">
             <ListComponent
               fields={templateFields}
@@ -731,7 +673,7 @@ const SuperDocTemplateBuilder = forwardRef<
           />
         </div>
 
-        {list.position === "right" && (
+        {list.position === 'right' && (
           <div className="superdoc-template-builder-sidebar">
             <ListComponent
               fields={templateFields}
@@ -761,6 +703,6 @@ const SuperDocTemplateBuilder = forwardRef<
   );
 });
 
-SuperDocTemplateBuilder.displayName = "SuperDocTemplateBuilder";
+SuperDocTemplateBuilder.displayName = 'SuperDocTemplateBuilder';
 
 export default SuperDocTemplateBuilder;

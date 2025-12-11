@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from "react";
-import type { FieldListProps, TemplateField } from "../types";
+import React, { useMemo, useState } from 'react';
+import type { FieldListProps, TemplateField } from '../types';
 
 const shortenGroupId = (group: string): string => {
   const parts = group.split('-');
@@ -16,23 +16,23 @@ const FieldItem: React.FC<{
     <div
       onClick={() => onSelect(field)}
       style={{
-        position: "relative",
-        padding: "10px 12px",
-        background: isSelected ? "#eff6ff" : "#f9fafb",
-        border: isSelected ? "1px solid #3b82f6" : "1px solid #e5e7eb",
-        borderRadius: "6px",
-        cursor: "pointer",
-        transition: "all 0.2s",
-        fontSize: isGrouped ? "13px" : "14px",
+        position: 'relative',
+        padding: '10px 12px',
+        background: isSelected ? '#eff6ff' : '#f9fafb',
+        border: isSelected ? '1px solid #3b82f6' : '1px solid #e5e7eb',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        transition: 'all 0.2s',
+        fontSize: isGrouped ? '13px' : '14px',
       }}
       onMouseEnter={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.background = "#f3f4f6";
+          e.currentTarget.style.background = '#f3f4f6';
         }
       }}
       onMouseLeave={(e) => {
         if (!isSelected) {
-          e.currentTarget.style.background = "#f9fafb";
+          e.currentTarget.style.background = '#f9fafb';
         }
       }}
       title={field.alias}
@@ -43,24 +43,24 @@ const FieldItem: React.FC<{
           onDelete(field.id);
         }}
         style={{
-          position: "absolute",
-          top: "6px",
-          right: "6px",
-          padding: "4px",
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          color: "#9ca3af",
-          transition: "color 0.2s",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+          position: 'absolute',
+          top: '6px',
+          right: '6px',
+          padding: '4px',
+          background: 'transparent',
+          border: 'none',
+          cursor: 'pointer',
+          color: '#9ca3af',
+          transition: 'color 0.2s',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.color = "#ef4444";
+          e.currentTarget.style.color = '#ef4444';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.color = "#9ca3af";
+          e.currentTarget.style.color = '#9ca3af';
         }}
         title="Delete field"
       >
@@ -80,36 +80,36 @@ const FieldItem: React.FC<{
           />
         </svg>
       </button>
-      <div style={{ paddingRight: "24px" }}>
+      <div style={{ paddingRight: '24px' }}>
         <div
           style={{
-            fontWeight: "500",
-            fontSize: isGrouped ? "12px" : "14px",
-            color: isGrouped ? "#6b7280" : "#111827",
+            fontWeight: '500',
+            fontSize: isGrouped ? '12px' : '14px',
+            color: isGrouped ? '#6b7280' : '#111827',
           }}
         >
           {field.alias || field.id}
         </div>
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            fontSize: "11px",
-            color: "#9ca3af",
-            marginTop: "2px",
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            fontSize: '11px',
+            color: '#9ca3af',
+            marginTop: '2px',
           }}
         >
           <span>ID: {field.id}</span>
           {field.mode && (
             <span
               style={{
-                fontSize: "9px",
-                padding: "2px 5px",
-                borderRadius: "3px",
-                background: field.mode === "block" ? "#dbeafe" : "#f3f4f6",
-                color: field.mode === "block" ? "#1e40af" : "#4b5563",
-                fontWeight: "500",
+                fontSize: '9px',
+                padding: '2px 5px',
+                borderRadius: '3px',
+                background: field.mode === 'block' ? '#dbeafe' : '#f3f4f6',
+                color: field.mode === 'block' ? '#1e40af' : '#4b5563',
+                fontWeight: '500',
               }}
             >
               {field.mode}
@@ -163,30 +163,30 @@ export const FieldList: React.FC<FieldListProps> = ({
     <div
       className="superdoc-field-list"
       style={{
-        width: "250px",
-        background: "white",
-        border: "1px solid #e5e7eb",
-        borderRadius: "8px",
-        padding: "16px",
+        width: '250px',
+        background: 'white',
+        border: '1px solid #e5e7eb',
+        borderRadius: '8px',
+        padding: '16px',
       }}
     >
-      <h3 style={{ margin: "0 0 16px 0", fontSize: "16px", fontWeight: "600" }}>
+      <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
         Template Fields ({fields.length})
       </h3>
 
       {fields.length === 0 ? (
         <div
           style={{
-            color: "#9ca3af",
-            fontSize: "14px",
-            textAlign: "center",
-            padding: "20px 0",
+            color: '#9ca3af',
+            fontSize: '14px',
+            textAlign: 'center',
+            padding: '20px 0',
           }}
         >
-          No fields yet. Type {"{{"} to add a field.
+          No fields yet. Type {'{{'} to add a field.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {ungroupedFields.map((field) => (
             <FieldItem
               key={field.id}
@@ -205,35 +205,33 @@ export const FieldList: React.FC<FieldListProps> = ({
               <div key={groupId}>
                 <div
                   style={{
-                    position: "relative",
-                    padding: "12px",
-                    background: "#f9fafb",
-                    border: "1px solid #e5e7eb",
-                    borderRadius: "6px",
-                    cursor: "pointer",
-                    transition: "all 0.2s",
+                    position: 'relative',
+                    padding: '12px',
+                    background: '#f9fafb',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
                   }}
                   onClick={() => toggleGroup(groupId)}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#f3f4f6";
+                    e.currentTarget.style.background = '#f3f4f6';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "#f9fafb";
+                    e.currentTarget.style.background = '#f9fafb';
                   }}
                 >
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                    <span style={{ fontSize: "12px", color: "#6b7280" }}>
-                      {isExpanded ? "▼" : "▶"}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '12px', color: '#6b7280' }}>
+                      {isExpanded ? '▼' : '▶'}
                     </span>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: "500", fontSize: "14px" }}>
-                        {firstField.alias}
-                      </div>
+                      <div style={{ fontWeight: '500', fontSize: '14px' }}>{firstField.alias}</div>
                       <div
                         style={{
-                          fontSize: "11px",
-                          color: "#9ca3af",
-                          marginTop: "2px",
+                          fontSize: '11px',
+                          color: '#9ca3af',
+                          marginTop: '2px',
                         }}
                       >
                         group: {shortenGroupId(groupId)} ({groupFields.length} fields)
@@ -245,11 +243,11 @@ export const FieldList: React.FC<FieldListProps> = ({
                 {isExpanded && (
                   <div
                     style={{
-                      marginLeft: "16px",
-                      marginTop: "4px",
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: "4px",
+                      marginLeft: '16px',
+                      marginTop: '4px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
                     }}
                   >
                     {groupFields.map((field) => (

@@ -1,32 +1,32 @@
-import React, { useState, useRef, useCallback, useMemo } from "react";
-import SuperDocTemplateBuilder from "@superdoc-dev/template-builder";
+import React, { useState, useRef, useCallback, useMemo } from 'react';
+import SuperDocTemplateBuilder from '@superdoc-dev/template-builder';
 import type {
   SuperDocTemplateBuilderHandle,
   TemplateField,
   FieldDefinition,
   ExportEvent,
-} from "@superdoc-dev/template-builder";
-import "superdoc/style.css";
-import "./App.css";
+} from '@superdoc-dev/template-builder';
+import 'superdoc/style.css';
+import './App.css';
 
 const availableFields: FieldDefinition[] = [
-  { id: "1242142770", label: "Agreement Date" },
-  { id: "1242142771", label: "User Name" },
-  { id: "1242142772", label: "Company Name" },
-  { id: "1242142773", label: "Service Type" },
-  { id: "1242142774", label: "Agreement Jurisdiction" },
-  { id: "1242142775", label: "Company Address" },
-  { id: "1242142776", label: "Signature" },
+  { id: '1242142770', label: 'Agreement Date' },
+  { id: '1242142771', label: 'User Name' },
+  { id: '1242142772', label: 'Company Name' },
+  { id: '1242142773', label: 'Service Type' },
+  { id: '1242142774', label: 'Agreement Jurisdiction' },
+  { id: '1242142775', label: 'Company Address' },
+  { id: '1242142776', label: 'Signature' },
 ];
 
 export function App() {
-  const [fields, setFields] = useState<TemplateField[]>([]);
+  const [, setFields] = useState<TemplateField[]>([]);
   const [events, setEvents] = useState<string[]>([]);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [documentSource, setDocumentSource] = useState<string | File>(
-    "https://storage.googleapis.com/public_static_hosting/public_demo_docs/new_service_agreement.docx",
+    'https://storage.googleapis.com/public_static_hosting/public_demo_docs/new_service_agreement.docx',
   );
   const builderRef = useRef<SuperDocTemplateBuilderHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -70,9 +70,9 @@ export function App() {
   );
 
   const handleReady = useCallback(() => {
-    log("✓ Template builder ready");
+    log('✓ Template builder ready');
     if (importingRef.current) {
-      log("📄 Document imported");
+      log('📄 Document imported');
       importingRef.current = false;
       setImportError(null);
       setIsImporting(false);
@@ -80,18 +80,16 @@ export function App() {
   }, [log]);
 
   const handleTrigger = useCallback(() => {
-    log("⌨ Trigger detected");
+    log('⌨ Trigger detected');
   }, [log]);
 
   const handleExport = useCallback(
     (event: ExportEvent) => {
-      console.log("Export Event:", event);
-      console.log("Fields:", JSON.stringify(event.fields, null, 2));
+      console.log('Export Event:', event);
+      console.log('Fields:', JSON.stringify(event.fields, null, 2));
       log(`Exported ${event.fields.length} fields`);
       event.fields.forEach((f) => {
-        console.log(
-          `  - ${f.alias} (id: ${f.id}, mode: ${f.mode}, group: ${f.group || "none"})`,
-        );
+        console.log(`  - ${f.alias} (id: ${f.id}, mode: ${f.mode}, group: ${f.group || 'none'})`);
       });
     },
     [log],
@@ -106,20 +104,20 @@ export function App() {
       setIsDownloading(true);
 
       await builderRef.current.exportTemplate({
-        fileName: "template.docx",
+        fileName: 'template.docx',
       });
 
-      log("📤 Template exported");
+      log('📤 Template exported');
     } catch (error) {
-      log("⚠️ Export failed");
-      console.error("Failed to export template", error);
+      log('⚠️ Export failed');
+      console.error('Failed to export template', error);
     } finally {
       setIsDownloading(false);
     }
   }, [log]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Tab") {
+    if (e.key === 'Tab') {
       e.preventDefault();
       if (e.shiftKey) {
         builderRef.current?.previousField();
@@ -132,7 +130,7 @@ export function App() {
   const documentConfig = useMemo(
     () => ({
       source: documentSource,
-      mode: "editing" as const,
+      mode: 'editing' as const,
     }),
     [documentSource],
   );
@@ -145,15 +143,15 @@ export function App() {
   const handleFileInputChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
-      event.target.value = "";
+      event.target.value = '';
 
       if (!file) return;
 
-      const extension = file.name.split(".").pop()?.toLowerCase();
-      if (extension !== "docx") {
-        const message = "Invalid file type. Please choose a .docx file.";
+      const extension = file.name.split('.').pop()?.toLowerCase();
+      if (extension !== 'docx') {
+        const message = 'Invalid file type. Please choose a .docx file.';
         setImportError(message);
-        log("⚠️ " + message);
+        log('⚠️ ' + message);
         return;
       }
 
@@ -176,7 +174,7 @@ export function App() {
 
   const listConfig = useMemo(
     () => ({
-      position: "right" as const,
+      position: 'right' as const,
     }),
     [],
   );
@@ -196,7 +194,7 @@ export function App() {
               </a>
             </h1>
             <p>
-              React template builder from{" "}
+              React template builder from{' '}
               <a href="https://superdoc.dev" target="_blank" rel="noopener">
                 SuperDoc
               </a>
@@ -220,7 +218,7 @@ export function App() {
       <div className="container">
         <div className="toolbar">
           <div className="toolbar-left">
-            <span className="hint">Type {"{{"} to insert a field</span>
+            <span className="hint">Type {'{{'} to insert a field</span>
             <span className="divider">|</span>
             <span className="hint">Tab/Shift+Tab to navigate</span>
           </div>
@@ -229,7 +227,7 @@ export function App() {
               type="file"
               accept=".docx"
               ref={fileInputRef}
-              style={{ display: "none" }}
+              style={{ display: 'none' }}
               onChange={handleFileInputChange}
             />
             <button
@@ -237,14 +235,14 @@ export function App() {
               className="import-button"
               disabled={isImporting || isDownloading}
             >
-              {isImporting ? "Importing…" : "Import File"}
+              {isImporting ? 'Importing…' : 'Import File'}
             </button>
             <button
               onClick={handleExportTemplate}
               className="export-button"
               disabled={isDownloading || isImporting}
             >
-              {isDownloading ? "Exporting..." : "Export Template"}
+              {isDownloading ? 'Exporting...' : 'Export Template'}
             </button>
           </div>
         </div>
