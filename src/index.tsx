@@ -367,101 +367,100 @@ const SuperDocTemplateBuilder = forwardRef<
     const initSuperDoc = async () => {
       const { SuperDoc } = await import('superdoc');
 
-      const config: Record<string, unknown> = {
-        selector: containerRef.current!,
-        document: document?.source,
-        documentMode: document?.mode || 'editing',
-        onReady: () => {
-          if (instance.activeEditor) {
-            const editor = instance.activeEditor;
+      const modules: Record<string, unknown> = {
+        comments: false,
+        ...(toolbarSettings && {
+          toolbar: {
+            selector: toolbarSettings.selector,
+            toolbarGroups: toolbarSettings.config.toolbarGroups || ['center'],
+            excludeItems: toolbarSettings.config.excludeItems || [],
+            ...toolbarSettings.config,
+          },
+        }),
+      };
 
-            editor.on('update', ({ editor: e }: any) => {
-              const { state } = e;
-              const { from } = state.selection;
+      const handleReady = () => {
+        if (instance.activeEditor) {
+          const editor = instance.activeEditor;
 
-              if (from >= trigger.length) {
-                const triggerStart = from - trigger.length;
-                const text = state.doc.textBetween(triggerStart, from);
+          editor.on('update', ({ editor: e }: any) => {
+            const { state } = e;
+            const { from } = state.selection;
 
-                if (text === trigger) {
-                  const coords = e.view.coordsAtPos(from);
-                  const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
+            if (from >= trigger.length) {
+              const triggerStart = from - trigger.length;
+              const text = state.doc.textBetween(triggerStart, from);
 
-                  const cleanup = () => {
-                    const editor = superdocRef.current?.activeEditor;
-                    if (!editor) return;
-                    const currentPos = editor.state.selection.from;
-                    const tr = editor.state.tr.delete(triggerStart, currentPos);
-                    (editor as any).view.dispatch(tr);
-                  };
+              if (text === trigger) {
+                const coords = e.view.coordsAtPos(from);
+                const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
 
-                  triggerCleanupRef.current = cleanup;
-                  menuTriggerFromRef.current = from;
-                  setMenuPosition(bounds);
-                  setMenuVisible(true);
-                  resetMenuFilter();
+                const cleanup = () => {
+                  const editor = superdocRef.current?.activeEditor;
+                  if (!editor) return;
+                  const currentPos = editor.state.selection.from;
+                  const tr = editor.state.tr.delete(triggerStart, currentPos);
+                  (editor as any).view.dispatch(tr);
+                };
 
-                  onTrigger?.({
-                    position: { from: triggerStart, to: from },
-                    bounds,
-                    cleanup,
-                  });
-
-                  return;
-                }
-              }
-
-              if (!menuVisibleRef.current) {
-                return;
-              }
-
-              if (menuTriggerFromRef.current == null) {
-                setMenuVisible(false);
+                triggerCleanupRef.current = cleanup;
+                menuTriggerFromRef.current = from;
+                setMenuPosition(bounds);
+                setMenuVisible(true);
                 resetMenuFilter();
+
+                onTrigger?.({
+                  position: { from: triggerStart, to: from },
+                  bounds,
+                  cleanup,
+                });
+
                 return;
               }
+            }
 
-              if (from < menuTriggerFromRef.current) {
-                setMenuVisible(false);
-                menuTriggerFromRef.current = null;
-                resetMenuFilter();
-                return;
-              }
+            if (!menuVisibleRef.current) {
+              return;
+            }
 
-              const queryText = state.doc.textBetween(menuTriggerFromRef.current, from);
-              updateMenuFilter(queryText);
+            if (menuTriggerFromRef.current == null) {
+              setMenuVisible(false);
+              resetMenuFilter();
+              return;
+            }
 
-              const coords = e.view.coordsAtPos(from);
-              const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
-              setMenuPosition(bounds);
-            });
+            if (from < menuTriggerFromRef.current) {
+              setMenuVisible(false);
+              menuTriggerFromRef.current = null;
+              resetMenuFilter();
+              return;
+            }
 
-            editor.on('update', () => {
-              discoverFields(editor);
-            });
+            const queryText = state.doc.textBetween(menuTriggerFromRef.current, from);
+            updateMenuFilter(queryText);
 
+            const coords = e.view.coordsAtPos(from);
+            const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
+            setMenuPosition(bounds);
+          });
+
+          editor.on('update', () => {
             discoverFields(editor);
-          }
+          });
 
-          onReady?.();
-        },
+          discoverFields(editor);
+        }
+
+        onReady?.();
       };
 
       const instance = new SuperDoc({
         selector: containerRef.current!,
+        document: document?.source,
         documentMode: document?.mode || 'editing',
-        ...config,
-        ...(toolbarSettings && {
-          toolbar: toolbarSettings.selector,
-          modules: {
-            toolbar: {
-              selector: toolbarSettings.selector,
-              toolbarGroups: toolbarSettings.config.toolbarGroups || ['center'],
-              excludeItems: toolbarSettings.config.excludeItems || [],
-              ...toolbarSettings.config,
-            },
-          },
-        }),
+        modules,
+        toolbar: toolbarSettings?.selector,
+        onReady: handleReady,
       });
 
       superdocRef.current = instance;
