@@ -46,7 +46,7 @@
     "react"
   ],
   "author": "SuperDoc Team",
-  "license": "MIT",
+  "license": "AGPLv3",
   "bugs": {
     "url": "https://github.com/superdoc-dev/template-builder/issues"
   },

@@ -1,4 +1,4 @@
-import type { SuperDoc } from 'superdoc';  
+import type { SuperDoc } from 'superdoc';
 
 export interface FieldDefinition {
   id: string;
