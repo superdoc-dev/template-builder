@@ -18,22 +18,19 @@ function TemplateEditor() {
   return (
     <SuperDocTemplateBuilder
       document={{
-        source: "template.docx",
-        mode: "editing"
+        source: 'template.docx',
+        mode: 'editing',
       }}
-      
       fields={{
         available: [
           { id: '1324567890', label: 'Customer Name', category: 'Contact' },
           { id: '1324567891', label: 'Invoice Date', category: 'Invoice' },
-          { id: '1324567892', label: 'Amount', category: 'Invoice' }
-        ]
+          { id: '1324567892', label: 'Amount', category: 'Invoice' },
+        ],
       }}
-      
       onTrigger={(event) => {
         console.log('User typed trigger at', event.position);
       }}
-      
       onFieldInsert={(field) => {
         console.log('Field inserted:', field.alias);
       }}
@@ -58,7 +55,7 @@ function TemplateEditor() {
 
 - **🎯 Trigger Detection** - Type `{{` (customizable) to insert fields
 - **📝 Field Management** - Insert, update, delete, and navigate fields
-- **🔍 Field Discovery** - Automatically finds existing fields in documents  
+- **🔍 Field Discovery** - Automatically finds existing fields in documents
 - **🎨 UI Agnostic** - Bring your own menus, panels, and components
 - **📄 SDT Based** - Uses structured content tags for Word compatibility
 - **⚡ Simple API** - Clear callbacks for trigger events and field changes
@@ -74,24 +71,24 @@ function TemplateEditor() {
     source: File | Blob | string,
     mode: 'editing' | 'viewing'
   }}
-  
+
   // Field configuration
   fields={{
     available: FieldDefinition[],  // Fields user can insert
     initial: TemplateField[]       // Pre-existing fields
   }}
-  
+
   // UI components (optional)
   menu={{
     trigger: '{{',                  // Trigger pattern
     component: CustomFieldMenu      // Custom menu component
   }}
-  
+
   list={{
     position: 'left' | 'right',    // Sidebar position
     component: CustomFieldList      // Custom list component
   }}
-  
+
   // Toolbar (optional)
   toolbar={true}                   // Render built-in toolbar container
   // toolbar="#my-toolbar"          // Mount into existing element
@@ -99,7 +96,7 @@ function TemplateEditor() {
   //   toolbarGroups: ['center'],
   //   excludeItems: ['italic', 'bold'],
   // }}
-  
+
   // Event handlers
   onReady={() => {}}
   onTrigger={(event) => {}}
@@ -126,8 +123,8 @@ ref.current.deleteField(fieldId);
 
 // Navigation
 ref.current.selectField(fieldId);
-ref.current.nextField();      // Tab behavior
-ref.current.previousField();  // Shift+Tab behavior
+ref.current.nextField(); // Tab behavior
+ref.current.previousField(); // Shift+Tab behavior
 
 // Get data
 const fields = ref.current.getFields();
@@ -141,10 +138,10 @@ const template = await ref.current.exportTemplate();
 ```jsx
 const CustomFieldMenu = ({ isVisible, position, availableFields, onSelect, onClose }) => {
   if (!isVisible) return null;
-  
+
   return (
     <div style={{ position: 'fixed', left: position?.left, top: position?.top }}>
-      {availableFields.map(field => (
+      {availableFields.map((field) => (
         <button key={field.id} onClick={() => onSelect(field)}>
           {field.label}
         </button>
@@ -162,8 +159,8 @@ const CustomFieldList = ({ fields, onSelect, onDelete, selectedFieldId }) => {
   return (
     <div>
       <h3>Fields ({fields.length})</h3>
-      {fields.map(field => (
-        <div 
+      {fields.map((field) => (
+        <div
           key={field.id}
           onClick={() => onSelect(field)}
           style={{ background: selectedFieldId === field.id ? '#blue' : '#gray' }}
@@ -184,7 +181,7 @@ Enable Tab/Shift+Tab navigation:
 ```jsx
 function TemplateEditor() {
   const ref = useRef();
-  
+
   const handleKeyDown = (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -195,7 +192,7 @@ function TemplateEditor() {
       }
     }
   };
-  
+
   return (
     <div onKeyDown={handleKeyDown}>
       <SuperDocTemplateBuilder ref={ref} {...props} />
@@ -219,7 +216,7 @@ const handleDownload = async () => {
 
   // Or with custom filename
   await ref.current?.exportTemplate({
-    fileName: 'invoice-template.docx'
+    fileName: 'invoice-template.docx',
   });
 };
 ```
@@ -233,7 +230,7 @@ const handleSave = async () => {
   // Get the blob without triggering download
   const blob = await ref.current?.exportTemplate({
     fileName: 'invoice-template.docx',
-    triggerDownload: false
+    triggerDownload: false,
   });
 
   if (blob) {
@@ -243,7 +240,7 @@ const handleSave = async () => {
 
     await fetch('/api/templates', {
       method: 'POST',
-      body: formData
+      body: formData,
     });
   }
 };
@@ -262,6 +259,7 @@ exportTemplate(config?: ExportConfig): Promise<void | Blob>
 ```
 
 **Return value:**
+
 - `Promise<void>` when `triggerDownload: true` (download happens automatically)
 - `Promise<Blob>` when `triggerDownload: false` (returns the docx data)
 
@@ -276,7 +274,7 @@ import type {
   FieldDefinition,
   TriggerEvent,
   ExportConfig,
-  SuperDocTemplateBuilderHandle
+  SuperDocTemplateBuilderHandle,
 } from '@superdoc-dev/template-builder';
 
 const ref = useRef<SuperDocTemplateBuilderHandle>(null);
@@ -284,4 +282,4 @@ const ref = useRef<SuperDocTemplateBuilderHandle>(null);
 
 ## License
 
-MIT
+AGPLv3

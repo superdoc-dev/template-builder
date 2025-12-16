@@ -5,6 +5,7 @@ export interface FieldDefinition {
   label: string;
   defaultValue?: string;
   metadata?: Record<string, any>;
+  mode?: 'inline' | 'block';
   group?: string;
 }
 

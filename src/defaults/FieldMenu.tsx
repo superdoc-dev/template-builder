@@ -61,7 +61,7 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
     const newField: FieldDefinition = {
       id: `custom_${Date.now()}`,
       label: trimmedName,
-      metadata: { mode: fieldMode },
+      mode: fieldMode,
     };
 
     try {
@@ -416,7 +416,7 @@ export const FieldMenu: React.FC<FieldMenuProps> = ({
                       flexShrink: 0,
                     }}
                   >
-                    {field.metadata?.mode || 'inline'}
+                    {field.mode || 'inline'}
                   </span>
                 </div>
               ))}
