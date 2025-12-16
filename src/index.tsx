@@ -491,13 +491,13 @@ const SuperDocTemplateBuilder = forwardRef<
       menuTriggerFromRef.current = null;
       resetMenuFilter();
 
-      const mode = (field.metadata?.mode as 'inline' | 'block') || 'inline';
+      const mode = field.mode || 'inline';
 
       if (field.id.startsWith('custom_') && onFieldCreate) {
         const createdField = await onFieldCreate(field);
 
         if (createdField) {
-          const createdMode = (createdField.metadata?.mode as 'inline' | 'block') || mode;
+          const createdMode = createdField.mode || mode;
           insertFieldInternal(createdMode, {
             alias: createdField.label,
             metadata: createdField.metadata,

@@ -16,7 +16,7 @@ const availableFields: FieldDefinition[] = [
   { id: '1242142773', label: 'Service Type' },
   { id: '1242142774', label: 'Agreement Jurisdiction' },
   { id: '1242142775', label: 'Company Address' },
-  { id: '1242142776', label: 'Signature' },
+  { id: '1242142776', label: 'Signature', mode: 'block' },
 ];
 
 export function App() {
