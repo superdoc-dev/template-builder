@@ -6,6 +6,9 @@ import { FieldMenu, FieldList } from './defaults';
 export * from './types';
 export { FieldMenu, FieldList };
 
+// Icon for "Convert to field" context menu item
+const fieldIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" fill="currentColor" width="12" height="12"><path d="M0 80V229.5c0 17 6.7 33.3 18.7 45.3l176 176c25 25 65.5 25 90.5 0L418.7 317.3c25-25 25-65.5 0-90.5l-176-176c-12-12-28.3-18.7-45.3-18.7H48C21.5 32 0 53.5 0 80zm112 32a32 32 0 1 1 0 64 32 32 0 1 1 0-64z"/></svg>`;
+
 type Editor = NonNullable<SuperDoc['activeEditor']>;
 
 const getTemplateFieldsFromEditor = (editor: Editor): Types.TemplateField[] => {
@@ -136,12 +139,22 @@ const SuperDocTemplateBuilder = forwardRef<
   const [menuFilteredFields, setMenuFilteredFields] = useState<Types.FieldDefinition[]>(
     () => fields.available || [],
   );
+  const [convertToFieldState, setConvertToFieldState] = useState<{
+    selectedText: string;
+    from: number;
+    to: number;
+  } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const superdocRef = useRef<SuperDoc | null>(null);
   const triggerCleanupRef = useRef<(() => void) | null>(null);
   const fieldsRef = useRef(fields);
   fieldsRef.current = fields;
+  const handleConvertToFieldRef = useRef<((text: string, from: number, to: number) => void) | null>(
+    null,
+  );
+  // Store last selection for "Convert to field" feature (context menu collapses selection)
+  const lastSelectionRef = useRef<{ text: string; from: number; to: number } | null>(null);
 
   const menuTriggerFromRef = useRef<number | null>(null);
   const menuVisibleRef = useRef(menuVisible);
@@ -177,6 +190,25 @@ const SuperDocTemplateBuilder = forwardRef<
   const resetMenuFilter = useCallback(() => {
     updateMenuFilter('');
   }, [updateMenuFilter]);
+
+  const handleConvertToField = useCallback(
+    (selectedText: string, from: number, to: number) => {
+      const editor = superdocRef.current?.activeEditor;
+      if (editor) {
+        const coords = (editor as any).view.coordsAtPos(from);
+        const bounds = clampToViewport(new DOMRect(coords.left, coords.top, 0, 0));
+        setMenuPosition(bounds);
+      }
+
+      setConvertToFieldState({ selectedText, from, to });
+      setMenuVisible(true);
+      resetMenuFilter();
+    },
+    [resetMenuFilter],
+  );
+
+  // Keep ref updated for use in modules config
+  handleConvertToFieldRef.current = handleConvertToField;
 
   const insertFieldInternal = useCallback(
     (
@@ -369,6 +401,32 @@ const SuperDocTemplateBuilder = forwardRef<
 
       const modules: Record<string, unknown> = {
         comments: false,
+        slashMenu: {
+          items: [
+            {
+              id: 'template-builder',
+              items: [
+                {
+                  id: 'convert-to-field',
+                  label: 'Convert to field',
+                  icon: fieldIcon,
+                  showWhen: (context: any) => {
+                    // Show when right-click and we have a stored selection
+                    return context.trigger === 'click' && lastSelectionRef.current !== null;
+                  },
+                  action: () => {
+                    // Use the stored selection (context selection is collapsed by right-click)
+                    const sel = lastSelectionRef.current;
+                    if (sel) {
+                      handleConvertToFieldRef.current?.(sel.text, sel.from, sel.to);
+                    }
+                  },
+                },
+              ],
+            },
+          ],
+          includeDefaultItems: true,
+        },
         ...(toolbarSettings && {
           toolbar: {
             selector: toolbarSettings.selector,
@@ -384,6 +442,8 @@ const SuperDocTemplateBuilder = forwardRef<
           const editor = instance.activeEditor;
 
           editor.on('update', ({ editor: e }: any) => {
+            discoverFields(editor);
+
             const { state } = e;
             const { from } = state.selection;
 
@@ -419,9 +479,7 @@ const SuperDocTemplateBuilder = forwardRef<
               }
             }
 
-            if (!menuVisibleRef.current) {
-              return;
-            }
+            if (!menuVisibleRef.current) return;
 
             if (menuTriggerFromRef.current == null) {
               setMenuVisible(false);
@@ -444,8 +502,18 @@ const SuperDocTemplateBuilder = forwardRef<
             setMenuPosition(bounds);
           });
 
-          editor.on('update', () => {
-            discoverFields(editor);
+          // Track selection changes for "Convert to field" feature
+          editor.on('selectionUpdate', ({ editor: e }: { editor: Editor }) => {
+            const { state } = e;
+            const { from, to, empty } = state.selection;
+            if (!empty) {
+              const text = state.doc.textBetween(from, to);
+              if (text) {
+                lastSelectionRef.current = { text, from, to };
+              }
+            } else {
+              lastSelectionRef.current = null;
+            }
           });
 
           discoverFields(editor);
@@ -484,6 +552,47 @@ const SuperDocTemplateBuilder = forwardRef<
 
   const handleMenuSelect = useCallback(
     async (field: Types.FieldDefinition) => {
+      // Handle "convert to field" flow (inline only)
+      if (convertToFieldState) {
+        const { selectedText, from, to } = convertToFieldState;
+        const editor = superdocRef.current?.activeEditor;
+
+        if (editor) {
+          // Delete the selected text first
+          const tr = editor.state.tr.delete(from, to);
+          (editor.view as any).dispatch(tr);
+
+          const previousFields = templateFields;
+          const success = editor.commands.insertStructuredContentInline?.({
+            attrs: {
+              alias: field.label,
+              tag: field.metadata ? JSON.stringify(field.metadata) : undefined,
+            },
+            text: selectedText,
+            preserveMarks: true,
+          });
+
+          if (success) {
+            const updatedFields = getTemplateFieldsFromEditor(editor);
+            setTemplateFields(updatedFields);
+            onFieldsChange?.(updatedFields);
+
+            const insertedField = updatedFields.find(
+              (candidate) => !previousFields.some((existing) => existing.id === candidate.id),
+            );
+            if (insertedField) {
+              onFieldInsert?.(insertedField);
+            }
+          }
+        }
+
+        setConvertToFieldState(null);
+        lastSelectionRef.current = null;
+        setMenuVisible(false);
+        return;
+      }
+
+      // Standard trigger-based flow
       if (triggerCleanupRef.current) {
         triggerCleanupRef.current();
         triggerCleanupRef.current = null;
@@ -515,20 +624,42 @@ const SuperDocTemplateBuilder = forwardRef<
       });
       setMenuVisible(false);
     },
-    [insertFieldInternal, onFieldCreate, resetMenuFilter],
+    [
+      insertFieldInternal,
+      onFieldCreate,
+      resetMenuFilter,
+      convertToFieldState,
+      templateFields,
+      onFieldsChange,
+      onFieldInsert,
+    ],
   );
 
   const handleSelectExisting = useCallback(
     (field: Types.TemplateField) => {
+      const editor = superdocRef.current?.activeEditor;
+      if (!editor) return;
+
+      // Store selected text before clearing state (for convert flow)
+      const textContent = convertToFieldState?.selectedText || field.alias;
+      const isConvertFlow = !!convertToFieldState;
+
+      // Handle "convert to field" flow - delete selected text first
+      if (convertToFieldState) {
+        const { from, to } = convertToFieldState;
+        const tr = editor.state.tr.delete(from, to);
+        (editor as any).view.dispatch(tr);
+        setConvertToFieldState(null);
+        lastSelectionRef.current = null;
+      }
+
+      // Standard trigger-based cleanup
       if (triggerCleanupRef.current) {
         triggerCleanupRef.current();
         triggerCleanupRef.current = null;
       }
       menuTriggerFromRef.current = null;
       resetMenuFilter();
-
-      const editor = superdocRef.current?.activeEditor;
-      if (!editor) return;
 
       const structuredContentHelpers = (editor.helpers as any)?.structuredContentCommands;
 
@@ -541,27 +672,22 @@ const SuperDocTemplateBuilder = forwardRef<
         group: groupId,
       });
 
-      const mode = field.mode || 'inline';
+      // Convert flow is always inline; standard flow respects existing field's mode
+      const mode = isConvertFlow ? 'inline' : field.mode || 'inline';
 
       const success =
         mode === 'inline'
           ? editor.commands.insertStructuredContentInline?.({
-              attrs: {
-                alias: field.alias,
-                tag: tagWithGroup,
-              },
-              text: field.alias,
+              attrs: { alias: field.alias, tag: tagWithGroup },
+              text: textContent,
+              preserveMarks: isConvertFlow,
             })
           : editor.commands.insertStructuredContentBlock?.({
-              attrs: {
-                alias: field.alias,
-                tag: tagWithGroup,
-              },
-              text: field.alias,
+              attrs: { alias: field.alias, tag: tagWithGroup },
             });
 
       if (success) {
-        if (!field.group) {
+        if (!field.group && !isConvertFlow) {
           updateField(field.id, { tag: tagWithGroup });
         }
 
@@ -572,11 +698,13 @@ const SuperDocTemplateBuilder = forwardRef<
         onFieldsChange?.(updatedFields);
       }
     },
-    [updateField, resetMenuFilter, onFieldsChange],
+    [updateField, resetMenuFilter, onFieldsChange, convertToFieldState],
   );
 
   const handleMenuClose = useCallback(() => {
     setMenuVisible(false);
+    setConvertToFieldState(null);
+    lastSelectionRef.current = null;
     menuTriggerFromRef.current = null;
     resetMenuFilter();
     if (triggerCleanupRef.current) {
