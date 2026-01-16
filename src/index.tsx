@@ -246,14 +246,9 @@ const SuperDocTemplateBuilder = forwardRef<
       if (success) {
         setTemplateFields((prev) => {
           const updated = prev.map((f) => (f.id === id ? { ...f, ...updates } : f));
+          onFieldsChange?.(updated);
           const field = updated.find((f) => f.id === id);
-
-          // Schedule callbacks for after render completes
-          queueMicrotask(() => {
-            onFieldsChange?.(updated);
-            if (field) onFieldUpdate?.(field);
-          });
-
+          if (field) onFieldUpdate?.(field);
           return updated;
         });
       }
@@ -274,13 +269,8 @@ const SuperDocTemplateBuilder = forwardRef<
 
           const updated = prev.filter((field) => field.id !== id);
           removed = true;
-
-          // Schedule callbacks for after render completes
-          queueMicrotask(() => {
-            onFieldsChange?.(updated);
-            onFieldDelete?.(id);
-          });
-
+          onFieldsChange?.(updated);
+          onFieldDelete?.(id);
           return updated;
         });
 
@@ -334,13 +324,10 @@ const SuperDocTemplateBuilder = forwardRef<
           removedFromState = true;
         }
 
-        // Schedule callbacks for after render completes
-        queueMicrotask(() => {
-          onFieldsChange?.(documentFields);
-          if (removedFromState) {
-            onFieldDelete?.(id);
-          }
-        });
+        onFieldsChange?.(documentFields);
+        if (removedFromState) {
+          onFieldDelete?.(id);
+        }
 
         return documentFields;
       });
@@ -375,14 +362,12 @@ const SuperDocTemplateBuilder = forwardRef<
       const discovered = getTemplateFieldsFromEditor(editor);
 
       setTemplateFields((prev) => {
-        const isEqual = areTemplateFieldsEqual(prev, discovered);
-
-        if (!isEqual) {
-          // Schedule callback for after render completes
-          queueMicrotask(() => onFieldsChange?.(discovered));
+        if (areTemplateFieldsEqual(prev, discovered)) {
+          return prev;
         }
 
-        return isEqual ? prev : discovered;
+        onFieldsChange?.(discovered);
+        return discovered;
       });
     },
     [onFieldsChange],
@@ -525,7 +510,6 @@ const SuperDocTemplateBuilder = forwardRef<
     discoverFields,
     onReady,
     onTrigger,
-    toolbar,
     toolbarSettings,
   ]);
 
