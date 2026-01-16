@@ -1,4 +1,12 @@
-import { useRef, useState, useEffect, useCallback, forwardRef, useImperativeHandle } from 'react';
+import {
+  useRef,
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import type { SuperDoc } from 'superdoc';
 import type * as Types from './types';
 import { FieldMenu, FieldList } from './defaults';
@@ -152,6 +160,7 @@ const SuperDocTemplateBuilder = forwardRef<
   const trigger = menu.trigger || '{{';
 
   const availableFields = fieldsRef.current.available || [];
+  const toolbarSettings = useMemo(() => resolveToolbar(toolbar), [toolbar]);
 
   const computeFilteredFields = useCallback(
     (query: string) => {
@@ -220,7 +229,7 @@ const SuperDocTemplateBuilder = forwardRef<
         }
       }
 
-      return success;
+      return success ?? false;
     },
     [onFieldInsert, onFieldsChange, templateFields],
   );
@@ -244,7 +253,7 @@ const SuperDocTemplateBuilder = forwardRef<
         });
       }
 
-      return success;
+      return success ?? false;
     },
     [onFieldUpdate, onFieldsChange],
   );
@@ -261,11 +270,11 @@ const SuperDocTemplateBuilder = forwardRef<
           const updated = prev.filter((field) => field.id !== id);
           removed = true;
           onFieldsChange?.(updated);
+          onFieldDelete?.(id);
           return updated;
         });
 
         if (removed) {
-          onFieldDelete?.(id);
           setSelectedFieldId((current) => (current === id ? null : current));
         }
 
@@ -316,11 +325,14 @@ const SuperDocTemplateBuilder = forwardRef<
         }
 
         onFieldsChange?.(documentFields);
+        if (removedFromState) {
+          onFieldDelete?.(id);
+        }
+
         return documentFields;
       });
 
       if (removedFromState) {
-        onFieldDelete?.(id);
         setSelectedFieldId((current) => (current === id ? null : current));
       }
 
@@ -361,11 +373,19 @@ const SuperDocTemplateBuilder = forwardRef<
     [onFieldsChange],
   );
 
+  // Initialize SuperDoc - uses abort pattern to handle React 18 Strict Mode
+  // which intentionally double-invokes effects to help identify cleanup issues
   useEffect(() => {
     if (!containerRef.current) return;
 
+    let aborted = false;
+    let instance: SuperDoc | null = null;
+
     const initSuperDoc = async () => {
       const { SuperDoc } = await import('superdoc');
+
+      // If cleanup ran while we were importing, abort
+      if (aborted) return;
 
       const modules: Record<string, unknown> = {
         comments: false,
@@ -380,7 +400,9 @@ const SuperDocTemplateBuilder = forwardRef<
       };
 
       const handleReady = () => {
-        if (instance.activeEditor) {
+        // Guard callback execution if cleanup already ran
+        if (aborted) return;
+        if (instance?.activeEditor) {
           const editor = instance.activeEditor;
 
           editor.on('update', ({ editor: e }: any) => {
@@ -454,7 +476,7 @@ const SuperDocTemplateBuilder = forwardRef<
         onReady?.();
       };
 
-      const instance = new SuperDoc({
+      instance = new SuperDoc({
         selector: containerRef.current!,
         document: document?.source,
         documentMode: document?.mode || 'editing',
@@ -469,18 +491,27 @@ const SuperDocTemplateBuilder = forwardRef<
     initSuperDoc();
 
     return () => {
+      aborted = true;
       triggerCleanupRef.current = null;
       menuTriggerFromRef.current = null;
 
-      const instance = superdocRef.current;
-
-      if (instance && typeof instance.destroy === 'function') {
-        instance.destroy();
+      if (instance) {
+        if (typeof instance.destroy === 'function') {
+          instance.destroy();
+        }
       }
 
       superdocRef.current = null;
     };
-  }, [document?.source, document?.mode, trigger, discoverFields, onReady, onTrigger, toolbar]);
+  }, [
+    document?.source,
+    document?.mode,
+    trigger,
+    discoverFields,
+    onReady,
+    onTrigger,
+    toolbarSettings,
+  ]);
 
   const handleMenuSelect = useCallback(
     async (field: Types.FieldDefinition) => {
@@ -638,8 +669,6 @@ const SuperDocTemplateBuilder = forwardRef<
 
   const MenuComponent = menu.component || FieldMenu;
   const ListComponent = list.component || FieldList;
-
-  const toolbarSettings = resolveToolbar(toolbar);
 
   return (
     <div className={`superdoc-template-builder ${className || ''}`} style={style}>
